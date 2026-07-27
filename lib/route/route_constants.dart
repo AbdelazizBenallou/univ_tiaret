@@ -1,0 +1,17 @@
+const String splashScreenRoute = "splash";
+const String logInScreenRoute = "login";
+const String registerScreenRoute = "register";
+const String registerAccountScreenRoute = "register_account";
+const String forgotPasswordScreenRoute = "forgot_password";
+const String codeVerificationScreenRoute = "code_verification";
+const String resetPasswordScreenRoute = "reset_password";
+const String changePasswordScreenRoute = "change_password";
+const String entryPointScreenRoute = "entry_point";
+const String homeScreenRoute = "home";
+const String settingsScreenRoute = "settings";
+const String semestersScreenRoute = "semesters";
+const String modulesScreenRoute = "modules";
+const String activitiesScreenRoute = "activities";
+const String lessonFilesScreenRoute = "lesson_files";
+const String downloadsScreenRoute = "downloads";
+const String fileViewerScreenRoute = "file_viewer";
