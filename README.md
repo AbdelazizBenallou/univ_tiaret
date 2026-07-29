@@ -1,18 +1,51 @@
 # univ_tiaret
 
-A new Flutter project.
+A comprehensive Flutter application for university management, featuring authentication, local database (sqflite), internationalization, file handling, calendar scheduling, and extensive UI components.
+
+## Features
+- **Authentication**: Secure login/registration with flutter_secure_storage
+- **Database**: Local SQLite storage with Riverpod state management
+- **Internationalization**: Multi-language support with locale preferences
+- **File Management**: PDF/Office document viewing and download capabilities
+- **Scheduling**: Calendar functionality with event tracking
+- **Theming**: Custom themes with Plus Jakarta, Cairo, and Grandis Extended fonts
+- **Notifications**: Local push notifications and secure storage integration
 
 ## Getting Started
+1. Clone the repository: `git clone <repo-url>`
+2. Install dependencies: `flutter pub get`
+3. Configure Android/iOS settings as needed
+4. Run the app: `flutter run`
 
-This project is a starting point for a Flutter application.
+## Tech Stack
+- **Flutter SDK**: ^3.12.2
+- **State Management**: flutter_riverpod
+- **Database**: sqflite
+- **Networking**: http
+- **Secure Storage**: flutter_secure_storage
+- **UI Components**: Custom bottom navigation, skeleton tiles, floating snackbar
+- **Internationalization**: Localization delegate and generated localization files
 
-A few resources to get you started if this is your first Flutter project:
+## Project Structure
+```
+lib/
+├── models/          # Data models (user, semester, module, etc.)
+├── screens/         # Application screens (auth, home, settings)
+├── providers/       # Riverpod providers for state management
+├── db/              # SQLite database helpers and repositories
+├── theme/           # Theme configuration and assets
+├── widgets/         # Reusable UI components
+└── services/        # Business logic (authentication, notifications)
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Usage
+- Authentication flows: `/lib/screens/auth/`
+- Main application navigation: `/lib/screens/home/`
+- Database operations: `/lib/db/`
+- Theme customization: `/lib/theme/`
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-# univ_tiaret
+## Contributing
+Contributions are welcome! Please open an issue to discuss major changes before implementing them.
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
