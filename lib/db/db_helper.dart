@@ -6,7 +6,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
 
   static Database? _database;
-  static const int _dbVersion = 4;
+  static const int _dbVersion = 5;
   static const String _dbName = 'univ_tiaret_cache.db';
 
   Future<Database> get database async {
@@ -116,6 +116,25 @@ class DatabaseHelper {
         created_at TEXT NOT NULL
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE user_profile (
+        id INTEGER PRIMARY KEY,
+        email TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        gender TEXT,
+        student_id TEXT,
+        phone TEXT,
+        level_id INTEGER,
+        level_name TEXT,
+        speciality_id INTEGER,
+        speciality_name TEXT,
+        roles TEXT,
+        status TEXT,
+        updated_at TEXT
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -182,6 +201,26 @@ class DatabaseHelper {
         ALTER TABLE favorites ADD COLUMN activity_type_id INTEGER NOT NULL DEFAULT 0
       ''');
     }
+    if (oldVersion < 5) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS user_profile (
+          id INTEGER PRIMARY KEY,
+          email TEXT,
+          first_name TEXT,
+          last_name TEXT,
+          gender TEXT,
+          student_id TEXT,
+          phone TEXT,
+          level_id INTEGER,
+          level_name TEXT,
+          speciality_id INTEGER,
+          speciality_name TEXT,
+          roles TEXT,
+          status TEXT,
+          updated_at TEXT
+        )
+      ''');
+    }
   }
 
   Future<void> clearAll() async {
@@ -193,5 +232,6 @@ class DatabaseHelper {
     await db.execute('DELETE FROM cached_lesson_files');
     await db.execute('DELETE FROM favorites');
     await db.execute('DELETE FROM reminders');
+    await db.execute('DELETE FROM user_profile');
   }
 }

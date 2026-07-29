@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:univ_tiaret/db/repositories/profile_repository.dart';
 import 'package:univ_tiaret/services/api_service.dart';
 import 'package:univ_tiaret/services/auth_service.dart';
 import 'package:univ_tiaret/models/models.dart';
@@ -69,6 +72,26 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  Future<void> _syncProfileToDb() async {
+    if (_user == null) return;
+    final data = <String, dynamic>{
+      'id': _user!.id,
+      'email': _user!.email,
+      'first_name': _user!.firstName,
+      'last_name': _user!.lastName,
+      'gender': _user!.gender,
+      'student_id': _user!.studentId,
+      'phone': _user!.phone,
+      'level_id': _user!.levelId,
+      'level_name': _user!.levelName,
+      'speciality_id': _user!.specialityId,
+      'speciality_name': _user!.specialityName,
+      'roles': jsonEncode(_user!.roles),
+      'status': _user!.status,
+    };
+    await ProfileRepository.upsert(data);
+  }
+
   Future<void> init() async {
     final isAuth = await AuthService.isAuthenticated();
     if (isAuth) {
@@ -99,7 +122,9 @@ class AuthProvider extends ChangeNotifier {
           }
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('fetchPrograms error: $e');
+    }
     _loadingLevels = false;
     _safeNotify();
   }
@@ -141,6 +166,7 @@ class AuthProvider extends ChangeNotifier {
       if (response['success'] == true) {
         final saved = await _saveAuthFromResponse(response);
         if (saved) {
+          await _syncProfileToDb();
           _state = AuthState.authenticated;
           _safeNotify();
           return;
@@ -259,7 +285,9 @@ class AuthProvider extends ChangeNotifier {
         '/v1/auth/logout',
         body: refreshToken != null ? {'refreshToken': refreshToken} : null,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('logout error: $e');
+    }
     await AuthService.clearAuth();
     _user = null;
     _state = AuthState.unauthenticated;

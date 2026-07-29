@@ -383,7 +383,7 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pushNamed(context, subscribeScreenRoute);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryColor,
@@ -804,6 +804,7 @@ class _FileTile extends ConsumerWidget {
 
   void _showFileMenu(BuildContext context, WidgetRef ref) {
     final t = AppLocalizations.of(context);
+    final isFav = ref.read(favoriteProvider).isFavorited(file.id);
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -815,6 +816,34 @@ class _FileTile extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              ListTile(
+                leading: Icon(
+                  isFav ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                  color: isFav ? const Color(0xFFFFBE21) : AppColors.greenAccent,
+                ),
+                title: Text(isFav ? 'Unsave' : 'Save'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  final fp = ref.read(favoriteProvider.notifier);
+                  if (isFav) {
+                    fp.remove(file.id);
+                  } else {
+                    fp.add(FavoriteFile(
+                      fileId: file.id,
+                      fileName: file.name,
+                      fileType: file.fileType,
+                      fileUrl: file.url,
+                      moduleId: moduleId,
+                      moduleName: moduleName,
+                      seasonId: seasonId,
+                      seasonName: seasonName,
+                      semesterName: semesterName,
+                      activityTypeId: activityTypeId,
+                      activityName: activityName,
+                    ));
+                  }
+                },
+              ),
               if (!isDownloaded)
                 ListTile(
                   leading: Icon(Icons.download_rounded, color: AppColors.greenAccent),
@@ -918,21 +947,39 @@ class _FileTile extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        fileColor(file.fileType).withValues(alpha: 0.8),
-                        fileColor(file.fileType),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                Stack(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            fileColor(file.fileType).withValues(alpha: 0.8),
+                            fileColor(file.fileType),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(fileIcon(file.fileType), size: 20, color: Colors.white),
                     ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(fileIcon(file.fileType), size: 20, color: Colors.white),
+                    if (currentIsDownloaded)
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          width: 18,
+                          height: 18,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF2ED573),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.check_rounded, size: 12, color: Colors.white),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(width: 14),
                 Expanded(

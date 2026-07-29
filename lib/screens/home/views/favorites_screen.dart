@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/download_provider.dart';
@@ -287,7 +288,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   }
 }
 
-class _FavoriteTile extends ConsumerStatefulWidget {
+class _FavoriteTile extends ConsumerWidget {
   final FavoriteFile fav;
   final bool isDark;
   final ColorScheme colors;
@@ -302,60 +303,114 @@ class _FavoriteTile extends ConsumerStatefulWidget {
     required this.onRemove,
   });
 
-  @override
-  ConsumerState<_FavoriteTile> createState() => _FavoriteTileState();
-}
-
-class _FavoriteTileState extends ConsumerState<_FavoriteTile> {
-  bool _showActions = false;
-
-  void _navigateToLessonPage() {
-    Navigator.pushNamed(
-      context,
-      lessonFilesScreenRoute,
-      arguments: {
-        'moduleId': widget.fav.moduleId,
-        'moduleName': widget.fav.moduleName,
-        'activityTypeId': widget.fav.activityTypeId,
-        'activityTypeName': widget.fav.activityName,
-        'seasonId': widget.fav.seasonId,
-        'seasonName': widget.fav.seasonName,
-        'semesterName': widget.fav.semesterName,
-      },
+  void _showMenu(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
+    final downloaded = ref.read(downloadProvider).isDownloaded(fav.fileId);
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (downloaded) ...[
+                ListTile(
+                  leading: Icon(Icons.open_in_new_rounded, color: AppColors.greenAccent),
+                  title: Text(t.translate('open_external')),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    final localPath = DownloadService.getLocalPath(fav.fileId);
+                    if (localPath != null) OpenFilex.open(localPath);
+                  },
+                ),
+              ],
+              ListTile(
+                leading: Icon(Icons.book_rounded, color: AppColors.greenAccent),
+                title: Text('View in module'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.pushNamed(
+                    context,
+                    lessonFilesScreenRoute,
+                    arguments: {
+                      'moduleId': fav.moduleId,
+                      'moduleName': fav.moduleName,
+                      'activityTypeId': fav.activityTypeId,
+                      'activityTypeName': fav.activityName,
+                      'seasonId': fav.seasonId,
+                      'seasonName': fav.seasonName,
+                      'semesterName': fav.semesterName,
+                    },
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_rounded, color: errorColor),
+                title: Text(t.translate('delete')),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onRemove();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    final downloaded = ref.watch(downloadProvider.select((p) => p.isDownloaded(widget.fav.fileId)));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final downloaded = ref.watch(downloadProvider.select((p) => p.isDownloaded(fav.fileId)));
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: widget.isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF5F5F5),
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF5F5F5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: InkWell(
-          onTap: downloaded ? widget.onTap : null,
-          onLongPress: () => setState(() => _showActions = !_showActions),
+          onTap: downloaded ? onTap : null,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        fileColor(widget.fav.fileType).withValues(alpha: 0.8),
-                        fileColor(widget.fav.fileType),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                Stack(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            fileColor(fav.fileType).withValues(alpha: 0.8),
+                            fileColor(fav.fileType),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(fileIcon(fav.fileType), size: 20, color: Colors.white),
                     ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(fileIcon(widget.fav.fileType), size: 20, color: Colors.white),
+                    if (downloaded)
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          width: 18,
+                          height: 18,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF2ED573),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.check_rounded, size: 12, color: Colors.white),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -363,10 +418,10 @@ class _FavoriteTileState extends ConsumerState<_FavoriteTile> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.fav.fileName,
+                        fav.fileName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: widget.colors.onSurface),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: colors.onSurface),
                       ),
                       const SizedBox(height: 3),
                       Row(
@@ -374,62 +429,36 @@ class _FavoriteTileState extends ConsumerState<_FavoriteTile> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
-                              color: fileColor(widget.fav.fileType).withValues(alpha: 0.1),
+                              color: fileColor(fav.fileType).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              widget.fav.fileType.toUpperCase(),
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fileColor(widget.fav.fileType)),
+                              fav.fileType.toUpperCase(),
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fileColor(fav.fileType)),
                             ),
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            widget.fav.activityName,
-                            style: TextStyle(fontSize: 11, color: widget.colors.onSurface.withValues(alpha: 0.4)),
+                            fav.activityName,
+                            style: TextStyle(fontSize: 11, color: colors.onSurface.withValues(alpha: 0.4)),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                if (_showActions && downloaded)
-                  GestureDetector(
-                    onTap: _navigateToLessonPage,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AppColors.greenAccent.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.visibility_rounded, size: 18, color: AppColors.greenAccent),
-                    ),
-                  ),
-                if (_showActions && downloaded) const SizedBox(width: 6),
                 GestureDetector(
-                  onTap: widget.onRemove,
+                  onTap: () => _showMenu(context, ref),
                   child: Container(
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: errorColor.withValues(alpha: 0.1),
+                      color: colors.onSurface.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.delete_rounded, size: 18, color: errorColor),
+                    child: Icon(Icons.more_vert_rounded, size: 18, color: colors.onSurface.withValues(alpha: 0.4)),
                   ),
                 ),
-                if (downloaded) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(Icons.check_circle_rounded, size: 18, color: AppColors.success),
-                  ),
-                ],
               ],
             ),
           ),

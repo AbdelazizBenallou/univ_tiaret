@@ -40,7 +40,7 @@ class SettingsScreen extends ConsumerWidget {
               _SettingTile(
                 icon: Icons.person_rounded,
                 title: t.translate('profile'),
-                onTap: () {},
+                onTap: () => Navigator.pushNamed(context, profileScreenRoute),
                 isDark: isDark,
                 colors: colors,
               ),
@@ -57,7 +57,7 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.badge_rounded,
                 title: t.translate('manage_subscription'),
                 subtitle: t.translate('subscription'),
-                onTap: () {},
+                onTap: () => Navigator.pushNamed(context, subscribeScreenRoute),
                 isDark: isDark,
                 colors: colors,
               ),

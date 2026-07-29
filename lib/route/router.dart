@@ -13,6 +13,9 @@ import 'package:univ_tiaret/screens/home/views/activities_screen.dart';
 import 'package:univ_tiaret/screens/home/views/lesson_files_screen.dart';
 import 'package:univ_tiaret/screens/home/views/downloads_screen.dart';
 import 'package:univ_tiaret/screens/file_viewer/file_viewer_screen.dart';
+import 'package:univ_tiaret/screens/profile/views/profile_screen.dart';
+import 'package:univ_tiaret/screens/profile/views/edit_profile_screen.dart';
+import 'package:univ_tiaret/screens/subscription/views/subscribe_screen.dart';
 import 'package:univ_tiaret/screens/splash/views/splash_screen.dart';
 import 'route_constants.dart';
 
@@ -102,6 +105,12 @@ Route<dynamic> generateRoute(RouteSettings settings) {
           body: const DownloadsScreen(),
         ),
       );
+    case profileScreenRoute:
+      return _buildRoute(settings, const ProfileScreen());
+    case editProfileScreenRoute:
+      return _buildRoute(settings, const EditProfileScreen());
+    case subscribeScreenRoute:
+      return _buildRoute(settings, const SubscribeScreen());
     case fileViewerScreenRoute:
       final args = settings.arguments as Map<String, dynamic>;
       return MaterialPageRoute(

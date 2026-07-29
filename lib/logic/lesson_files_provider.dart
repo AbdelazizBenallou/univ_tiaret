@@ -125,8 +125,8 @@ class LessonFilesProvider extends ChangeNotifier {
 
         final allFiles = page == 1 ? newFiles : [..._state.files, ...newFiles];
 
-        if (page == 1 && newFiles.isNotEmpty) {
-          await LessonFileRepository.insertAll(newFiles);
+        if (newFiles.isNotEmpty) {
+          await LessonFileRepository.insertAll(newFiles, append: page > 1);
         }
 
         _state = _state.copyWith(
@@ -153,7 +153,11 @@ class LessonFilesProvider extends ChangeNotifier {
             error: 'err_server_error',
           );
         } else {
-          _state = _state.copyWith(status: LessonFilesStatus.loaded);
+          _state = _state.copyWith(
+            status: LessonFilesStatus.loaded,
+            page: 1,
+            totalPages: 1,
+          );
         }
       }
     } catch (e) {
@@ -163,7 +167,11 @@ class LessonFilesProvider extends ChangeNotifier {
           error: 'err_network',
         );
       } else {
-        _state = _state.copyWith(status: LessonFilesStatus.loaded);
+        _state = _state.copyWith(
+          status: LessonFilesStatus.loaded,
+          page: 1,
+          totalPages: 1,
+        );
       }
     }
 

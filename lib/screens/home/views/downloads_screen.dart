@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/download_provider.dart';
+import 'package:univ_tiaret/route/route_constants.dart';
 import 'package:univ_tiaret/services/download_service.dart';
 import 'package:univ_tiaret/utils/file_utils.dart';
 
@@ -582,15 +583,6 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                                 item: item,
                                 isDark: isDark,
                                 colors: colors,
-                                onTap: () {
-                                  if (item.localPath != null) {
-                                    Navigator.pushNamed(context, 'fileViewer', arguments: {
-                                      'filePath': item.localPath,
-                                      'fileName': item.name,
-                                      'fileType': item.fileType,
-                                    });
-                                  }
-                                },
                               ),
                             )),
                         ],
@@ -898,13 +890,20 @@ class _ModuleGroup extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          ...files.map((item) => Padding(
+            ...files.map((item) => Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: _DownloadedFileTile(
               item: item,
               isDark: isDark,
               colors: colors,
               compact: true,
+              onTap: item.localPath != null
+                  ? () => Navigator.pushNamed(context, fileViewerScreenRoute, arguments: {
+                        'filePath': item.localPath,
+                        'fileName': item.name,
+                        'fileType': item.fileType,
+                      })
+                  : null,
             ),
           )),
         ],
@@ -913,7 +912,7 @@ class _ModuleGroup extends StatelessWidget {
   }
 }
 
-class _DownloadedFileTile extends StatelessWidget {
+class _DownloadedFileTile extends ConsumerWidget {
   final DownloadItem item;
   final bool isDark;
   final ColorScheme colors;
@@ -928,8 +927,71 @@ class _DownloadedFileTile extends StatelessWidget {
     this.compact = false,
   });
 
+  void _showMenu(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.open_in_new_rounded, color: AppColors.greenAccent),
+                title: Text(t.translate('open_external')),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  if (item.localPath != null) {
+                    OpenFilex.open(item.localPath!);
+                  }
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_rounded, color: errorColor),
+                title: Text(t.translate('delete')),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _confirmDelete(context, ref);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(t.translate('delete_file')),
+        content: Text(t.translate('delete_file_confirm').replaceAll('{name}', item.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(t.translate('cancel')),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref.read(downloadProvider.notifier).deleteDownload(item.id);
+            },
+            child: Text(t.translate('delete'), style: TextStyle(color: errorColor)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Material(
         color: isDark
             ? Colors.white.withValues(alpha: 0.05)
@@ -1026,6 +1088,19 @@ class _DownloadedFileTile extends StatelessWidget {
                   ],
                 ),
               ),
+              if (!compact)
+                GestureDetector(
+                  onTap: () => _showMenu(context, ref),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: colors.onSurface.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.more_vert_rounded, size: 18, color: colors.onSurface.withValues(alpha: 0.4)),
+                  ),
+                ),
             ],
           ),
         ),

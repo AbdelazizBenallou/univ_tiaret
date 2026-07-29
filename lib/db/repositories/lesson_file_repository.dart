@@ -4,18 +4,20 @@ import 'package:univ_tiaret/models/lesson_file.dart';
 class LessonFileRepository {
   static final DatabaseHelper _db = DatabaseHelper.instance;
 
-  static Future<void> insertAll(List<LessonFile> files) async {
+  static Future<void> insertAll(List<LessonFile> files, {bool append = false}) async {
     if (files.isEmpty) return;
     final db = await _db.database;
     final batch = db.batch();
     final now = DateTime.now().toIso8601String();
     final first = files.first;
 
-    batch.delete(
-      'cached_lesson_files',
-      where: 'module_id = ? AND activity_type_id = ? AND season_id = ?',
-      whereArgs: [first.moduleId, first.activityTypeId, first.seasonId],
-    );
+    if (!append) {
+      batch.delete(
+        'cached_lesson_files',
+        where: 'module_id = ? AND activity_type_id = ? AND season_id = ?',
+        whereArgs: [first.moduleId, first.activityTypeId, first.seasonId],
+      );
+    }
 
     for (final file in files) {
       batch.insert('cached_lesson_files', {

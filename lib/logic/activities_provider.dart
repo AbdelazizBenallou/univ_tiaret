@@ -59,11 +59,10 @@ class ActivitiesProvider extends ChangeNotifier {
           _error = 'err_server_error';
         }
       }
-    } catch (e) {
+    } catch (_) {
       if (cached.isEmpty) {
         _error = 'err_network';
       }
-      debugPrint('fetchActivities error: $e');
     }
 
     _loading = false;

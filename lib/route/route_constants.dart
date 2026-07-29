@@ -15,3 +15,6 @@ const String activitiesScreenRoute = "activities";
 const String lessonFilesScreenRoute = "lesson_files";
 const String downloadsScreenRoute = "downloads";
 const String fileViewerScreenRoute = "file_viewer";
+const String profileScreenRoute = "profile";
+const String editProfileScreenRoute = "edit_profile";
+const String subscribeScreenRoute = "subscribe";
