@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants.dart';
 
 const InputDecorationTheme lightInputDecorationTheme = InputDecorationTheme(
-  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
   fillColor: lightGreyColor,
   filled: true,
   hintStyle: TextStyle(color: greyColor),
@@ -15,7 +15,7 @@ const InputDecorationTheme lightInputDecorationTheme = InputDecorationTheme(
 );
 
 const InputDecorationTheme darkInputDecorationTheme = InputDecorationTheme(
-  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
   fillColor: AppColors.inputFillDark,
   filled: true,
   hintStyle: TextStyle(color: AppColors.hintDark),

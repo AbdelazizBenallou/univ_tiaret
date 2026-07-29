@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+
 class ImageViewer extends StatefulWidget {
   final String filePath;
   final String fileName;
@@ -103,7 +104,7 @@ class _ImageViewerState extends State<ImageViewer> {
               actions: [
                 Center(
                   child: Padding(
-                    padding: const EdgeInsets.only(right: 4),
+                    padding: const EdgeInsetsDirectional.only(end: 4),
                     child: Text(
                       '${(_currentScale * 100).round()}%',
                       style: const TextStyle(fontSize: 13),
@@ -112,17 +113,17 @@ class _ImageViewerState extends State<ImageViewer> {
                 ),
                 IconButton(
                   onPressed: _resetZoom,
-                  icon: const Icon(Icons.fit_screen_rounded, size: 22),
+                  icon: Icon(Icons.fit_screen_rounded, size: 22),
                   tooltip: 'Fit to screen',
                 ),
                 IconButton(
                   onPressed: _zoomOut,
-                  icon: const Icon(Icons.zoom_out_rounded, size: 22),
+                  icon: Icon(Icons.zoom_out_rounded, size: 22),
                   tooltip: 'Zoom out',
                 ),
                 IconButton(
                   onPressed: _zoomIn,
-                  icon: const Icon(Icons.zoom_in_rounded, size: 22),
+                  icon: Icon(Icons.zoom_in_rounded, size: 22),
                   tooltip: 'Zoom in',
                 ),
               ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:univ_tiaret/db/db.dart';
 import 'package:univ_tiaret/models/activity.dart';
 import 'package:univ_tiaret/services/api_service.dart';
 
@@ -11,17 +12,27 @@ class ActivitiesProvider extends ChangeNotifier {
   String _moduleName = '';
   bool _loading = false;
   String? _error;
+  bool _fromCache = false;
 
   List<Activity> get activities => _activities;
   String get moduleName => _moduleName;
   bool get loading => _loading;
   String? get error => _error;
+  bool get fromCache => _fromCache;
 
   Future<void> fetchActivities({required int moduleId}) async {
     _loading = true;
     _error = null;
     _activities = [];
     notifyListeners();
+
+    final cached = await ActivityRepository.getByModule(moduleId);
+    if (cached.isNotEmpty) {
+      _activities = cached;
+      _fromCache = true;
+      _loading = false;
+      notifyListeners();
+    }
 
     try {
       final response = await ApiService.get(
@@ -34,16 +45,25 @@ class ActivitiesProvider extends ChangeNotifier {
           _moduleName = data['module_name'] as String? ?? '';
           final components = data['components'] as List?;
           if (components != null) {
-            _activities = components
+            final fresh = components
                 .map((e) => Activity.fromJson(e as Map<String, dynamic>))
                 .toList();
+            await ActivityRepository.insertAll(moduleId, fresh);
+            _activities = fresh;
+            _fromCache = false;
+            _error = null;
           }
         }
       } else {
-        _error = response['message'];
+        if (cached.isEmpty) {
+          _error = 'err_server_error';
+        }
       }
     } catch (e) {
-      _error = 'err_network';
+      if (cached.isEmpty) {
+        _error = 'err_network';
+      }
+      debugPrint('fetchActivities error: $e');
     }
 
     _loading = false;

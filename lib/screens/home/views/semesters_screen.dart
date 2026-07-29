@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:univ_tiaret/components/breadcrumb_bar.dart';
 import 'package:univ_tiaret/components/modern_list_tile.dart';
@@ -6,7 +7,9 @@ import 'package:univ_tiaret/components/skeleton_tile.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/semesters_provider.dart';
+import 'package:univ_tiaret/providers/navigation_provider.dart';
 import 'package:univ_tiaret/route/route_constants.dart';
+import 'package:univ_tiaret/widgets/app_bottom_nav.dart';
 
 class SemestersScreen extends ConsumerStatefulWidget {
   final int levelId;
@@ -48,6 +51,9 @@ class _SemestersScreenState extends ConsumerState<SemestersScreen> {
       appBar: AppBar(
         title: Text(widget.seasonName),
       ),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: ref.watch(navigationProvider),
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -65,34 +71,54 @@ class _SemestersScreenState extends ConsumerState<SemestersScreen> {
           ? const SkeletonList()
           : state.error != null
               ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.error_outline_rounded,
-                        size: 48,
-                        color: errorColor.withValues(alpha: 0.5),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        t.translate('err_network'),
-                        style: TextStyle(
-                          color: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.color
-                              ?.withValues(alpha: 0.5),
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: errorColor.withValues(alpha: 0.08),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.cloud_off_rounded,
+                            size: 36,
+                            color: errorColor.withValues(alpha: 0.6),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextButton.icon(
-                        onPressed: () => ref
-                            .read(semestersProvider.notifier)
-                            .fetchSemesters(levelId: widget.levelId),
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: Text(t.translate('try_again')),
-                      ),
-                    ],
+                        const SizedBox(height: 20),
+                        Text(
+                          t.translate('err_network'),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.color
+                                ?.withValues(alpha: 0.7),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: 160,
+                          child: ElevatedButton.icon(
+                            onPressed: () => ref
+                                .read(semestersProvider.notifier)
+                                .fetchSemesters(levelId: widget.levelId),
+                            icon: Icon(Icons.refresh_rounded, size: 18),
+                            label: Text(t.translate('try_again')),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : state.semesters.isEmpty

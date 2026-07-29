@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:univ_tiaret/components/breadcrumb_bar.dart';
 import 'package:univ_tiaret/components/skeleton_tile.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/modules_provider.dart';
 import 'package:univ_tiaret/models/module.dart';
+import 'package:univ_tiaret/providers/navigation_provider.dart';
 import 'package:univ_tiaret/route/route_constants.dart';
+import 'package:univ_tiaret/widgets/app_bottom_nav.dart';
+import 'package:univ_tiaret/widgets/sort_bottom_sheet.dart';
 
-enum SortOption { name, coefficient }
+enum ModuleSortOption { name, coefficient }
 enum ViewMode { list, grid }
 
 class ModulesScreen extends ConsumerStatefulWidget {
@@ -37,7 +41,7 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
   bool _showSearch = false;
   final _searchController = TextEditingController();
   String _searchQuery = '';
-  SortOption _sortOption = SortOption.name;
+  ModuleSortOption _sortOption = ModuleSortOption.name;
   bool _sortAscending = true;
   ViewMode _viewMode = ViewMode.list;
 
@@ -70,7 +74,7 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
 
     filtered.sort((a, b) {
       int cmp;
-      if (_sortOption == SortOption.name) {
+      if (_sortOption == ModuleSortOption.name) {
         cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
       } else {
         cmp = double.parse(a.coefficient)
@@ -82,114 +86,27 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
     return filtered;
   }
 
-  void _showSortMenu() {
+  Future<void> _showSortMenu() async {
     final t = AppLocalizations.of(context);
-    showModalBottomSheet(
+    final result = await showSortBottomSheet<ModuleSortOption>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.color
-                      ?.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  t.translate('sort_by'),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: Icon(
-                  Icons.sort_by_alpha_rounded,
-                  color: _sortOption == SortOption.name
-                      ? primaryColor
-                      : Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.color
-                          ?.withValues(alpha: 0.5),
-                ),
-                title: Text(t.translate('sort_name')),
-                trailing: _sortOption == SortOption.name
-                    ? Icon(
-                        _sortAscending
-                            ? Icons.arrow_upward_rounded
-                            : Icons.arrow_downward_rounded,
-                        color: primaryColor,
-                        size: 20,
-                      )
-                    : null,
-                onTap: () {
-                  setState(() {
-                    if (_sortOption == SortOption.name) {
-                      _sortAscending = !_sortAscending;
-                    } else {
-                      _sortOption = SortOption.name;
-                      _sortAscending = true;
-                    }
-                  });
-                  Navigator.pop(ctx);
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                  Icons.numbers_rounded,
-                  color: _sortOption == SortOption.coefficient
-                      ? primaryColor
-                      : Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.color
-                          ?.withValues(alpha: 0.5),
-                ),
-                title: Text(t.translate('sort_coeff')),
-                trailing: _sortOption == SortOption.coefficient
-                    ? Icon(
-                        _sortAscending
-                            ? Icons.arrow_upward_rounded
-                            : Icons.arrow_downward_rounded,
-                        color: primaryColor,
-                        size: 20,
-                      )
-                    : null,
-                onTap: () {
-                  setState(() {
-                    if (_sortOption == SortOption.coefficient) {
-                      _sortAscending = !_sortAscending;
-                    } else {
-                      _sortOption = SortOption.coefficient;
-                      _sortAscending = true;
-                    }
-                  });
-                  Navigator.pop(ctx);
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
+      title: t.translate('sort_by'),
+      currentValue: _sortOption,
+      ascending: _sortAscending,
+      onToggleOrder: () {
+        setState(() => _sortAscending = !_sortAscending);
       },
+      options: [
+        SortOption(value: ModuleSortOption.name, label: t.translate('sort_name'), icon: Icons.sort_by_alpha_rounded),
+        SortOption(value: ModuleSortOption.coefficient, label: t.translate('sort_coeff'), icon: Icons.tag_rounded),
+      ],
     );
+    if (result != null && mounted) {
+      setState(() {
+        _sortOption = result;
+        _sortAscending = true;
+      });
+    }
   }
 
   @override
@@ -229,34 +146,18 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
             icon: Icon(
               _viewMode == ViewMode.list
                   ? Icons.grid_view_rounded
-                  : Icons.view_list_rounded,
+                  : Icons.menu_rounded,
               size: 24,
             ),
           ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'sort') {
-                _showSortMenu();
-              }
-            },
-            icon: const Icon(Icons.more_vert_rounded, size: 24),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            itemBuilder: (ctx) => [
-              PopupMenuItem(
-                value: 'sort',
-                child: Row(
-                  children: [
-                    const Icon(Icons.sort_rounded, size: 20),
-                    const SizedBox(width: 12),
-                    Text(t.translate('sort')),
-                  ],
-                ),
-              ),
-            ],
+          IconButton(
+            onPressed: _showSortMenu,
+            icon: Icon(Icons.filter_list_rounded, size: 24),
           ),
         ],
+      ),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: ref.watch(navigationProvider),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,14 +184,14 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
                 onChanged: (v) => setState(() => _searchQuery = v),
                 decoration: InputDecoration(
                   hintText: t.translate('search_modules'),
-                  prefixIcon: const Icon(Icons.search_rounded, size: 22),
+                  prefixIcon: Icon(Icons.search_rounded, size: 22),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _searchQuery = '');
                           },
-                          icon: const Icon(Icons.clear_rounded, size: 20),
+                          icon: Icon(Icons.close_rounded, size: 20),
                         )
                       : null,
                   contentPadding:
@@ -336,36 +237,56 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
 
   Widget _buildError(String message, AppLocalizations t) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.error_outline_rounded,
-            size: 48,
-            color: errorColor.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            message,
-            style: TextStyle(
-              color: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.color
-                  ?.withValues(alpha: 0.5),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: errorColor.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.cloud_off_rounded,
+                size: 36,
+                color: errorColor.withValues(alpha: 0.6),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextButton.icon(
-            onPressed: () => ref.read(modulesProvider.notifier).fetchModules(
-                  semesterId: widget.semesterId,
-                  levelName: widget.levelName,
-                  specialityId: widget.specialityId,
+            const SizedBox(height: 20),
+            Text(
+              t.translate(message),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.color
+                    ?.withValues(alpha: 0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: 160,
+              child: ElevatedButton.icon(
+                onPressed: () => ref.read(modulesProvider.notifier).fetchModules(
+                      semesterId: widget.semesterId,
+                      levelName: widget.levelName,
+                      specialityId: widget.specialityId,
+                    ),
+                icon: Icon(Icons.refresh_rounded, size: 18),
+                label: Text(t.translate('try_again')),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-            icon: const Icon(Icons.refresh_rounded),
-            label: Text(t.translate('try_again')),
-          ),
-        ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -437,7 +358,7 @@ class _ModuleListTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF5F5F5),
           borderRadius: BorderRadius.circular(12),
@@ -455,7 +376,7 @@ class _ModuleListTile extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(10),
             ),
-                child: const Icon(
+                child: Icon(
                   Icons.book_rounded,
                   size: 20,
                   color: Colors.white,
@@ -559,7 +480,7 @@ class _ModuleGridCard extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.book_rounded,
                   size: 16,
                   color: Colors.white,

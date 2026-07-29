@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:univ_tiaret/components/breadcrumb_bar.dart';
 import 'package:univ_tiaret/components/modern_list_tile.dart';
@@ -45,34 +46,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ? const SkeletonList()
                 : seasonsState.error != null
                     ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.error_outline_rounded,
-                              size: 48,
-                              color: errorColor.withValues(alpha: 0.5),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              t.translate('err_network'),
-                              style: TextStyle(
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.color
-                                    ?.withValues(alpha: 0.5),
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  color: errorColor.withValues(alpha: 0.08),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.cloud_off_rounded,
+                                  size: 36,
+                                  color: errorColor.withValues(alpha: 0.6),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextButton.icon(
-                              onPressed: () => ref
-                                  .read(seasonsProvider.notifier)
-                                  .fetchSeasons(),
-                              icon: const Icon(Icons.refresh_rounded),
-                              label: Text(t.translate('resend_code')),
-                            ),
-                          ],
+                              const SizedBox(height: 20),
+                              Text(
+                                t.translate('err_network'),
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.color
+                                      ?.withValues(alpha: 0.7),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 24),
+                              SizedBox(
+                                width: 160,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => ref
+                                      .read(seasonsProvider.notifier)
+                                      .fetchSeasons(),
+                                  icon: Icon(Icons.error_rounded, size: 18),
+                                  label: Text(t.translate('try_again')),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       )
                     : seasonsState.seasons.isEmpty
@@ -100,7 +121,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               itemBuilder: (context, index) {
                                 final season = seasonsState.seasons[index];
                                 return ModernListTile(
-                                  icon: Icons.calendar_today_rounded,
+                                  icon: Icons.date_range_rounded,
                                   title: season.name,
                                   subtitle: t.translate('season'),
                                   badge: season.isCurrent

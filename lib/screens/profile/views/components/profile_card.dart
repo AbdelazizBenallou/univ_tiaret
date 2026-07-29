@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 
 class ProfileCard extends StatelessWidget {
@@ -54,12 +54,11 @@ class ProfileCard extends StatelessWidget {
       ),
       subtitle: Text(email),
       trailing: isShowArrow
-          ? SvgPicture.asset(
-              "assets/icons/miniRight.svg",
-              colorFilter: ColorFilter.mode(
-                Theme.of(context).iconTheme.color!.withValues(alpha: 0.4),
-                BlendMode.srcIn,
-              ),
+          ? Icon(
+              Directionality.of(context) == TextDirection.rtl
+                  ? Icons.chevron_left_rounded
+                  : Icons.chevron_right_rounded,
+              color: Theme.of(context).iconTheme.color!.withValues(alpha: 0.4),
             )
           : null,
     );

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:univ_tiaret/components/bottom_sheet_selector.dart';
 import 'package:univ_tiaret/constants.dart';
@@ -71,7 +71,7 @@ class _RegisterPersonalScreenState
       items: genderMap.keys.toList(),
       title: t.translate('select_gender'),
       hintText: t.translate('search_gender'),
-      leadingIconPath: 'assets/icons/Man&Woman.svg',
+      leadingIcon: Icons.transgender_rounded,
       selectedName: _selectedGender != null ? genderMap[_selectedGender] : null,
       itemLabelBuilder: (g) => genderMap[g] ?? g,
     );
@@ -87,7 +87,7 @@ class _RegisterPersonalScreenState
       items: auth.programs,
       title: t.translate('academic_program'),
       hintText: t.translate('search_programs'),
-      leadingIconPath: 'assets/icons/Product.svg',
+      leadingIcon: Icons.backpack_rounded,
       selectedName: _selectedProgram?.name,
       itemLabelBuilder: (p) => p.name,
     );
@@ -109,7 +109,7 @@ class _RegisterPersonalScreenState
       items: levels,
       title: t.translate('select_level'),
       hintText: t.translate('search_levels'),
-      leadingIconPath: 'assets/icons/Bookmark.svg',
+      leadingIcon: Icons.book_rounded,
       selectedName: _selectedLevelId != null
           ? levels
               .where((l) => l.id == _selectedLevelId)
@@ -135,7 +135,7 @@ class _RegisterPersonalScreenState
       items: specialities,
       title: t.translate('select_speciality'),
       hintText: t.translate('search_specialities'),
-      leadingIconPath: 'assets/icons/Bookmark.svg',
+      leadingIcon: Icons.book_rounded,
       selectedName: _selectedSpecialityId != null
           ? specialities
               .where((s) => s.id == _selectedSpecialityId)
@@ -185,18 +185,14 @@ class _RegisterPersonalScreenState
                         prefixIcon: Padding(
                           padding: const EdgeInsets.symmetric(
                               vertical: 2),
-                          child: SvgPicture.asset(
-                            "assets/icons/Man.svg",
-                            height: 22,
-                            width: 22,
-                            colorFilter: ColorFilter.mode(
-                              Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge!
-                                  .color!
-                                  .withValues(alpha: 0.3),
-                              BlendMode.srcIn,
-                            ),
+                          child: Icon(
+                            Icons.male_rounded,
+                            size: 22,
+                            color: Theme.of(context)
+                                .textTheme
+                                .bodyLarge!
+                                .color!
+                                .withValues(alpha: 0.3),
                           ),
                         ),
                       ),
@@ -212,18 +208,14 @@ class _RegisterPersonalScreenState
                         prefixIcon: Padding(
                           padding: const EdgeInsets.symmetric(
                               vertical: 2),
-                          child: SvgPicture.asset(
-                            "assets/icons/Woman.svg",
-                            height: 22,
-                            width: 22,
-                            colorFilter: ColorFilter.mode(
-                              Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge!
-                                  .color!
-                                  .withValues(alpha: 0.3),
-                              BlendMode.srcIn,
-                            ),
+                          child: Icon(
+                            Icons.female_rounded,
+                            size: 22,
+                            color: Theme.of(context)
+                                .textTheme
+                                .bodyLarge!
+                                .color!
+                                .withValues(alpha: 0.3),
                           ),
                         ),
                       ),
@@ -232,7 +224,7 @@ class _RegisterPersonalScreenState
                     _SelectorField(
                       label: _selectedGender != null ? t.translate(_selectedGender!) : t.translate('gender'),
                       isSelected: _selectedGender != null,
-                      iconPath: 'assets/icons/Man&Woman.svg',
+                      icon: Icons.transgender_rounded,
                       onTap: _pickGender,
                       validator: (v) =>
                           _selectedGender == null ? t.translate('required') : null,
@@ -243,7 +235,7 @@ class _RegisterPersonalScreenState
                           ? t.translate('loading_programs')
                           : (_selectedProgram?.name ?? t.translate('academic_program')),
                       isSelected: _selectedProgramId != null,
-                      iconPath: 'assets/icons/Product.svg',
+                      icon: Icons.backpack_rounded,
                       onTap: auth.loadingLevels ? null : _pickProgram,
                       validator: (v) =>
                           _selectedProgramId == null ? t.translate('required') : null,
@@ -260,7 +252,7 @@ class _RegisterPersonalScreenState
                               ? t.translate('select_program_first')
                               : t.translate('level')),
                       isSelected: _selectedLevelId != null,
-                      iconPath: 'assets/icons/Bookmark.svg',
+                      icon: Icons.book_rounded,
                       onTap: _selectedProgramId != null ? _pickLevel : null,
                       validator: (v) =>
                           _selectedLevelId == null ? t.translate('required') : null,
@@ -276,7 +268,7 @@ class _RegisterPersonalScreenState
                                 t.translate('speciality')
                             : t.translate('speciality'),
                         isSelected: _selectedSpecialityId != null,
-                        iconPath: 'assets/icons/Bookmark.svg',
+                        icon: Icons.book_rounded,
                         onTap: _pickSpeciality,
                         validator: (v) =>
                             _selectedSpecialityId == null
@@ -317,14 +309,14 @@ class _RegisterPersonalScreenState
 class _SelectorField extends StatelessWidget {
   final String label;
   final bool isSelected;
-  final String iconPath;
+  final IconData icon;
   final VoidCallback? onTap;
   final String? Function(String?)? validator;
 
   const _SelectorField({
     required this.label,
     required this.isSelected,
-    required this.iconPath,
+    required this.icon,
     this.onTap,
     this.validator,
   });
@@ -348,18 +340,14 @@ class _SelectorField extends StatelessWidget {
                   prefixIcon: Padding(
                     padding: const EdgeInsets.symmetric(
                         vertical: defaultPadding * 0.25),
-                    child: SvgPicture.asset(
-                      iconPath,
-                      height: 24,
-                      width: 24,
-                      colorFilter: ColorFilter.mode(
-                        theme.textTheme.bodyLarge!.color!.withValues(alpha: 0.3),
-                        BlendMode.srcIn,
-                      ),
+                    child: Icon(
+                      icon,
+                      size: 24,
+                      color: theme.textTheme.bodyLarge!.color!.withValues(alpha: 0.3),
                     ),
                   ),
                   suffixIcon: Padding(
-                    padding: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsetsDirectional.only(end: 12),
                     child: Icon(Icons.keyboard_arrow_down_rounded,
                         color: theme.textTheme.bodyLarge!.color!.withValues(alpha: 0.4), size: 22),
                   ),

@@ -64,9 +64,12 @@ const Duration defaultDuration = Duration(milliseconds: 300);
 
 const String baseUrl = "http://localhost:3000";
 
-MultiValidator passwordValidator(String requiredMsg, String minLengthMsg, String specialMsg) => MultiValidator([
+MultiValidator passwordValidator(String requiredMsg, String minLengthMsg, String upperMsg, String lowerMsg, String numberMsg, String specialMsg) => MultiValidator([
   RequiredValidator(errorText: requiredMsg),
   MinLengthValidator(8, errorText: minLengthMsg),
+  PatternValidator(r'(?=.*?[A-Z])', errorText: upperMsg),
+  PatternValidator(r'(?=.*?[a-z])', errorText: lowerMsg),
+  PatternValidator(r'(?=.*?[0-9])', errorText: numberMsg),
   PatternValidator(r'(?=.*?[#?!@$%^&*-])', errorText: specialMsg),
 ]);
 

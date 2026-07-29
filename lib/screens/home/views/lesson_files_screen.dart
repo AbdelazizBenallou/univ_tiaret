@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_filex/open_filex.dart';
+
 import 'package:univ_tiaret/components/breadcrumb_bar.dart';
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/components/skeleton_tile.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/download_provider.dart';
+import 'package:univ_tiaret/logic/favorite_provider.dart';
 import 'package:univ_tiaret/logic/lesson_files_provider.dart';
+import 'package:univ_tiaret/models/favorite_file.dart';
 import 'package:univ_tiaret/models/lesson_file.dart';
+import 'package:univ_tiaret/providers/navigation_provider.dart';
 import 'package:univ_tiaret/services/api_service.dart';
 import 'package:univ_tiaret/services/download_service.dart';
 import 'package:univ_tiaret/route/route_constants.dart';
 import 'package:univ_tiaret/utils/file_utils.dart';
+import 'package:univ_tiaret/widgets/app_bottom_nav.dart';
+import 'package:univ_tiaret/widgets/sort_bottom_sheet.dart';
 
 enum FileSortOption { dateNewest, dateOldest, nameAZ, nameZA }
 
@@ -48,13 +55,14 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
   final Set<int> _selectedIds = {};
   final ScrollController _scrollController = ScrollController();
   final Set<int> _preparingDownloads = {};
-  bool _isLoadingNextPage = false;
+  bool _lastFromCache = true;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     ref.read(downloadProvider.notifier).init();
+    ref.read(favoriteProvider.notifier).init();
     Future.microtask(() => ref.read(lessonFilesProvider.notifier).fetchFiles(
           moduleId: widget.moduleId,
           activityTypeId: widget.activityTypeId,
@@ -69,24 +77,24 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
     super.dispose();
   }
 
+  void _checkScrollAfterCache() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _onScroll();
+    });
+  }
+
   void _onScroll() {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      if (!_isLoadingNextPage) {
-        final notifier = ref.read(lessonFilesProvider.notifier);
-        final state = notifier.state;
-        if (state.status == LessonFilesStatus.loaded &&
-            state.page < state.totalPages) {
-          _isLoadingNextPage = true;
-          notifier.loadNextPage(
-            moduleId: widget.moduleId,
-            activityTypeId: widget.activityTypeId,
-            seasonId: widget.seasonId,
-          ).then((_) {
-            _isLoadingNextPage = false;
-            _onScroll();
-          });
-        }
+        _scrollController.position.maxScrollExtent - 300) {
+      final notifier = ref.read(lessonFilesProvider.notifier);
+      final s = notifier.state;
+      if (s.status == LessonFilesStatus.loaded && s.page < s.totalPages) {
+        notifier.loadNextPage(
+          moduleId: widget.moduleId,
+          activityTypeId: widget.activityTypeId,
+          seasonId: widget.seasonId,
+        );
       }
     }
   }
@@ -118,6 +126,24 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
     });
 
     return result;
+  }
+
+  Future<void> _showSortMenu() async {
+    final t = AppLocalizations.of(context);
+    final result = await showSortBottomSheet<FileSortOption>(
+      context: context,
+      title: t.translate('sort_by'),
+      currentValue: _sortOption,
+      options: [
+        SortOption(value: FileSortOption.dateNewest, label: t.translate('sort_newest'), icon: Icons.access_time_rounded),
+        SortOption(value: FileSortOption.dateOldest, label: t.translate('sort_oldest'), icon: Icons.history_rounded),
+        SortOption(value: FileSortOption.nameAZ, label: t.translate('sort_name_az'), icon: Icons.arrow_downward_rounded),
+        SortOption(value: FileSortOption.nameZA, label: t.translate('sort_name_za'), icon: Icons.arrow_upward_rounded),
+      ],
+    );
+    if (result != null && mounted) {
+      setState(() => _sortOption = result);
+    }
   }
 
   void _enterSelection(int fileId) {
@@ -184,6 +210,13 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
     final colors = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (!state.fromCache && _lastFromCache && state.files.isNotEmpty) {
+      _lastFromCache = false;
+      _checkScrollAfterCache();
+    } else {
+      _lastFromCache = state.fromCache;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.activityTypeName),
@@ -192,7 +225,7 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
             onPressed: () {
               Navigator.pushNamed(context, 'downloads');
             },
-            icon: const Icon(
+            icon: Icon(
               Icons.download_rounded,
               size: 24,
             ),
@@ -212,108 +245,14 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
               size: 24,
             ),
           ),
-          PopupMenuButton<FileSortOption>(
-            onSelected: (value) => setState(() => _sortOption = value),
-            icon: const Icon(Icons.sort_rounded, size: 24),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            itemBuilder: (ctx) => [
-              PopupMenuItem(
-                value: FileSortOption.dateNewest,
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.access_time_rounded,
-                      size: 20,
-                      color: _sortOption == FileSortOption.dateNewest
-                          ? primaryColor
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      t.translate('sort_newest'),
-                      style: TextStyle(
-                        color: _sortOption == FileSortOption.dateNewest
-                            ? primaryColor
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: FileSortOption.dateOldest,
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.history_rounded,
-                      size: 20,
-                      color: _sortOption == FileSortOption.dateOldest
-                          ? primaryColor
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      t.translate('sort_oldest'),
-                      style: TextStyle(
-                        color: _sortOption == FileSortOption.dateOldest
-                            ? primaryColor
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: FileSortOption.nameAZ,
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.sort_by_alpha_rounded,
-                      size: 20,
-                      color: _sortOption == FileSortOption.nameAZ
-                          ? primaryColor
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      t.translate('sort_name_az'),
-                      style: TextStyle(
-                        color: _sortOption == FileSortOption.nameAZ
-                            ? primaryColor
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: FileSortOption.nameZA,
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.sort_by_alpha_rounded,
-                      size: 20,
-                      color: _sortOption == FileSortOption.nameZA
-                          ? primaryColor
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      t.translate('sort_name_za'),
-                      style: TextStyle(
-                        color: _sortOption == FileSortOption.nameZA
-                            ? primaryColor
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          IconButton(
+            onPressed: _showSortMenu,
+            icon: Icon(Icons.filter_list_rounded, size: 24),
           ),
         ],
+      ),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: ref.watch(navigationProvider),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,14 +287,14 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
                 onChanged: (v) => setState(() => _searchQuery = v),
                 decoration: InputDecoration(
                   hintText: t.translate('search_files'),
-                  prefixIcon: const Icon(Icons.search_rounded, size: 22),
+                  prefixIcon: Icon(Icons.search_rounded, size: 22),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _searchQuery = '');
                           },
-                          icon: const Icon(Icons.clear_rounded, size: 20),
+                          icon: Icon(Icons.close_rounded, size: 20),
                         )
                       : null,
                   contentPadding:
@@ -380,7 +319,9 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
     switch (state.status) {
       case LessonFilesStatus.initial:
       case LessonFilesStatus.loading:
-        return const SkeletonList();
+        return state.files.isEmpty
+            ? const SkeletonList()
+            : _buildFileList(state, t, colors, isDark);
 
       case LessonFilesStatus.noSubscription:
         return _buildNoSubscription(t, colors, isDark);
@@ -388,6 +329,7 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
       case LessonFilesStatus.error:
         return _buildError(state.error ?? 'err_network', t);
 
+      case LessonFilesStatus.loadingMore:
       case LessonFilesStatus.loaded:
         if (state.files.isEmpty) {
           return _buildEmpty(t, colors);
@@ -412,7 +354,7 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.lock_outline_rounded,
+                Icons.lock_rounded,
                 size: 40,
                 color: AppColors.warning,
               ),
@@ -469,59 +411,92 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
 
   Widget _buildError(String message, AppLocalizations t) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.error_outline_rounded,
-            size: 48,
-            color: errorColor.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            message,
-            style: TextStyle(
-              color: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.color
-                  ?.withValues(alpha: 0.5),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: errorColor.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.cloud_off_rounded,
+                size: 36,
+                color: errorColor.withValues(alpha: 0.6),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextButton.icon(
-            onPressed: () =>
-                ref.read(lessonFilesProvider.notifier).fetchFiles(
-                      moduleId: widget.moduleId,
-                      activityTypeId: widget.activityTypeId,
-                      seasonId: widget.seasonId,
-                    ),
-            icon: const Icon(Icons.refresh_rounded),
-            label: Text(t.translate('try_again')),
-          ),
-        ],
+            const SizedBox(height: 20),
+            Text(
+              t.translate(message),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.color
+                    ?.withValues(alpha: 0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: 160,
+              child: ElevatedButton.icon(
+                onPressed: () =>
+                    ref.read(lessonFilesProvider.notifier).fetchFiles(
+                          moduleId: widget.moduleId,
+                          activityTypeId: widget.activityTypeId,
+                          seasonId: widget.seasonId,
+                        ),
+                icon: Icon(Icons.refresh_rounded, size: 18),
+                label: Text(t.translate('try_again')),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmpty(AppLocalizations t, ColorScheme colors) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.folder_off_rounded,
-            size: 48,
-            color: colors.onSurface.withValues(alpha: 0.2),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            t.translate('no_files'),
-            style: TextStyle(
-              color: colors.onSurface.withValues(alpha: 0.5),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: colors.onSurface.withValues(alpha: 0.06),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.folder_open_rounded,
+                size: 36,
+                color: colors.onSurface.withValues(alpha: 0.3),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            Text(
+              t.translate('no_files'),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: colors.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -533,8 +508,7 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
     bool isDark,
   ) {
     final filtered = _getFilteredAndSorted(state.files);
-    final isLoadingMore = state.status == LessonFilesStatus.loading &&
-        state.files.isNotEmpty;
+    final isLoadingMore = state.status == LessonFilesStatus.loadingMore;
     final dlNotifier = ref.read(downloadProvider.notifier);
 
     return Column(
@@ -557,7 +531,7 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.search_off_rounded,
+                              Icons.zoom_out_rounded,
                               size: 48,
                               color: colors.onSurface.withValues(alpha: 0.2),
                             ),
@@ -631,8 +605,8 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.delete_outline_rounded,
-                          size: 18,
+                          Icons.delete_rounded,
+                          size: 24,
                           color: errorColor,
                         ),
                         const SizedBox(width: 6),
@@ -672,12 +646,11 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
     bool isDark,
     ColorScheme colors,
   ) {
-    return ListView.separated(
+    return ListView.builder(
       controller: _scrollController,
       physics: const ClampingScrollPhysics(),
-      padding: const EdgeInsets.all(16),
-        itemCount: filtered.length,
-      separatorBuilder: (ctx, i) => const SizedBox(height: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: filtered.length,
       itemBuilder: (context, index) {
         final file = filtered[index];
         final isDownloaded = dlNotifier.isDownloaded(file.id);
@@ -697,9 +670,15 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
               : () => _onTapFile(file),
           onLongPress: isDownloaded ? () => _enterSelection(file.id) : null,
           onDownload: () => _onDownload(file),
+          moduleName: widget.moduleName,
+          activityName: widget.activityTypeName,
+          moduleId: widget.moduleId,
+          seasonId: widget.seasonId,
+          seasonName: widget.seasonName,
+          semesterName: widget.semesterName,
+          activityTypeId: widget.activityTypeId,
         );
       },
-    ),
     );
   }
 
@@ -728,10 +707,11 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
     if (dp.isActive(file.id)) return;
 
     setState(() => _preparingDownloads.add(file.id));
+    final t = AppLocalizations.of(context);
 
     showFloatingSnackBar(
       context,
-      message: 'Preparing: ${file.name}',
+      message: '${t.translate('preparing')}: ${file.name}',
       type: SnackBarType.info,
     );
 
@@ -759,7 +739,7 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
           if (mounted) {
             showFloatingSnackBar(
               context,
-              message: '${file.name} queued',
+              message: '${file.name} ${t.translate('queued')}',
               type: SnackBarType.success,
             );
           }
@@ -768,7 +748,7 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
         if (mounted) {
           showFloatingSnackBar(
             context,
-            message: response['message'] ?? 'Download failed',
+            message: t.translate('err_download_failed'),
             type: SnackBarType.error,
           );
         }
@@ -793,6 +773,13 @@ class _FileTile extends ConsumerWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final VoidCallback onDownload;
+  final String moduleName;
+  final String activityName;
+  final int moduleId;
+  final int seasonId;
+  final String seasonName;
+  final String semesterName;
+  final int activityTypeId;
 
   const _FileTile({
     required this.file,
@@ -802,11 +789,96 @@ class _FileTile extends ConsumerWidget {
     required this.isActive,
     required this.onTap,
     required this.onDownload,
+    required this.moduleName,
+    required this.activityName,
+    required this.moduleId,
+    required this.seasonId,
+    required this.seasonName,
+    required this.semesterName,
+    required this.activityTypeId,
     this.isPreparing = false,
     this.isSelected = false,
     this.selectionMode = false,
     this.onLongPress,
   });
+
+  void _showFileMenu(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isDownloaded)
+                ListTile(
+                  leading: Icon(Icons.download_rounded, color: AppColors.greenAccent),
+                  title: Text(t.translate('download')),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onDownload();
+                  },
+                ),
+              if (isDownloaded) ...[
+                ListTile(
+                  leading: Icon(Icons.open_in_new_rounded, color: AppColors.greenAccent),
+                  title: Text(t.translate('open_external')),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openExternal();
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.delete_rounded, color: errorColor),
+                  title: Text(t.translate('delete')),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _confirmDelete(context, ref);
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openExternal() {
+    final localPath = DownloadService.getLocalPath(file.id);
+    if (localPath != null) {
+      OpenFilex.open(localPath);
+    }
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(AppLocalizations.of(context).translate('delete_file')),
+        content: Text(AppLocalizations.of(context).translate('delete_file_confirm').replaceAll('{name}', file.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppLocalizations.of(context).translate('cancel')),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref.read(downloadProvider.notifier).deleteDownload(file.id);
+            },
+            child: Text(AppLocalizations.of(context).translate('delete'), style: TextStyle(color: errorColor)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -825,190 +897,143 @@ class _FileTile extends ConsumerWidget {
     }));
 
     final currentIsDownloaded = dlSignature == 'done';
-    final currentIsActive = dlSignature.startsWith('active:');
+    final isFav = ref.watch(favoriteProvider.select((p) => p.isFavorited(file.id)));
 
-    return Material(
-      color: isSelected
-          ? AppColors.greenAccent.withValues(alpha: 0.1)
-          : isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : const Color(0xFFF5F5F5),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: isSelected
-            ? BorderSide(color: AppColors.greenAccent.withValues(alpha: 0.4), width: 1.5)
-            : BorderSide.none,
-      ),
-      child: InkWell(
-        onTap: isDownloaded ? onTap : null,
-        onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              if (selectionMode && isDownloaded)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Icon(
-                    isSelected
-                        ? Icons.check_circle_rounded
-                        : Icons.radio_button_unchecked_rounded,
-                    size: 22,
-                    color: isSelected
-                        ? AppColors.greenAccent
-                        : colors.onSurface.withValues(alpha: 0.3),
-                  ),
-                ),
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      fileColor(file.fileType).withValues(alpha: 0.8),
-                      fileColor(file.fileType),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  fileIcon(file.fileType),
-                  size: 20,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      file.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: colors.onSurface,
-                      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.greenAccent.withValues(alpha: 0.1)
+              : isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: InkWell(
+          onTap: currentIsDownloaded ? onTap : null,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        fileColor(file.fileType).withValues(alpha: 0.8),
+                        fileColor(file.fileType),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 5, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: fileColor(file.fileType)
-                                .withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            file.fileType.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: fileColor(file.fileType),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(fileIcon(file.fileType), size: 20, color: Colors.white),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: colors.onSurface),
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: fileColor(file.fileType).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              file.fileType.toUpperCase(),
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fileColor(file.fileType)),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          date,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: colors.onSurface.withValues(alpha: 0.4),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              moduleName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 11, color: colors.onSurface.withValues(alpha: 0.45)),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 6),
+                          Text(
+                            date,
+                            style: TextStyle(fontSize: 10, color: colors.onSurface.withValues(alpha: 0.35)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              if (!selectionMode) ...[
-                if (currentIsDownloaded)
+                if (!selectionMode) ...[
                   GestureDetector(
                     onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          title: const Text('Delete file'),
-                          content: Text('Delete "${file.name}" from your downloads?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(ctx);
-                                ref.read(downloadProvider.notifier).deleteDownload(file.id);
-                              },
-                              child: Text('Delete', style: TextStyle(color: errorColor)),
-                            ),
-                          ],
-                        ),
-                      );
+                      final fp = ref.read(favoriteProvider.notifier);
+                      if (isFav) {
+                        fp.remove(file.id);
+                      } else {
+                        fp.add(FavoriteFile(
+                          fileId: file.id,
+                          fileName: file.name,
+                          fileType: file.fileType,
+                          fileUrl: file.url,
+                          moduleId: moduleId,
+                          moduleName: moduleName,
+                          seasonId: seasonId,
+                          seasonName: seasonName,
+                          semesterName: semesterName,
+                          activityTypeId: activityTypeId,
+                          activityName: activityName,
+                        ));
+                      }
                     },
                     child: Container(
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: errorColor.withValues(alpha: 0.1),
+                        color: isFav
+                            ? const Color(0xFFFFBE21).withValues(alpha: 0.15)
+                            : colors.onSurface.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        Icons.delete_outline_rounded,
+                        isFav ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
                         size: 18,
-                        color: errorColor,
+                        color: isFav
+                            ? const Color(0xFFFFBE21)
+                            : colors.onSurface.withValues(alpha: 0.4),
                       ),
                     ),
                   ),
-                if (currentIsDownloaded) const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: (currentIsActive || isPreparing) ? null : (currentIsDownloaded ? onTap : onDownload),
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: currentIsDownloaded
-                          ? AppColors.success.withValues(alpha: 0.1)
-                          : currentIsActive || isPreparing
-                              ? AppColors.warning.withValues(alpha: 0.1)
-                              : AppColors.greenAccent.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: () => _showFileMenu(context, ref),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: colors.onSurface.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.more_vert_rounded, size: 18, color: colors.onSurface.withValues(alpha: 0.4)),
                     ),
-                    child: isPreparing
-                        ? const Padding(
-                            padding: EdgeInsets.all(10),
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.warning,
-                            ),
-                          )
-                        : Icon(
-                            currentIsDownloaded
-                                ? Icons.check_circle_rounded
-                                : currentIsActive
-                                    ? Icons.hourglass_top_rounded
-                                    : Icons.download_rounded,
-                            size: 20,
-                            color: currentIsDownloaded
-                                ? AppColors.success
-                                : currentIsActive
-                                    ? AppColors.warning
-                                    : AppColors.greenAccent,
-                          ),
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -1018,10 +1043,15 @@ class _FileTile extends ConsumerWidget {
   String _formatDate(String iso) {
     try {
       final dt = DateTime.parse(iso);
-      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+      if (diff.inMinutes < 1) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
     } catch (_) {
       return iso;
     }
   }
-
 }

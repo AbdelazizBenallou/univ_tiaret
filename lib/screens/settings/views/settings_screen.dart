@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/components/server_config_dialog.dart';
@@ -8,7 +8,6 @@ import 'package:univ_tiaret/logic/auth_provider.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/main.dart';
 import 'package:univ_tiaret/route/route_constants.dart';
-import 'package:univ_tiaret/screens/profile/views/components/profile_card.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -18,167 +17,186 @@ class SettingsScreen extends ConsumerWidget {
     final auth = ref.watch(authProvider);
     final t = AppLocalizations.of(context);
     final appState = MyApp.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       width: double.infinity,
       height: double.infinity,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
         children: [
-          ProfileCard(
-          name: auth.user?.firstName ?? "Student",
-          email: auth.user?.email ?? "student@univ-tiaret.dz",
-          press: () {},
-        ),
-        const SizedBox(height: 20),
-        _SettingsCard(
-          title: t.translate('account'),
-          children: [
-            _GreenTile(
-              icon: Icons.person_outline_rounded,
-              title: t.translate('profile'),
-              subtitle: auth.user?.firstName ?? '',
-              onTap: () {},
-            ),
-            _tileDivider(context),
-            _GreenTile(
-              icon: Icons.lock_outline_rounded,
-              title: t.translate('change_password'),
-              subtitle: '',
-              onTap: () {
-                Navigator.pushNamed(context, changePasswordScreenRoute);
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        _SettingsCard(
-          title: t.translate('subscription'),
-          children: [
-            _GreenTile(
-              icon: Icons.card_membership_rounded,
-              title: t.translate('manage_subscription'),
-              subtitle: '',
-              onTap: () {},
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        _SettingsCard(
-          title: t.translate('content'),
-          children: [
-            _GreenTile(
-              icon: Icons.download_rounded,
-              title: t.translate('downloads'),
-              subtitle: '',
-              onTap: () {
-                Navigator.pushNamed(context, downloadsScreenRoute);
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        _SettingsCard(
-          title: t.translate('preferences'),
-          children: [
-            _GreenTile(
-              icon: Icons.palette_outlined,
-              title: t.translate('theme'),
-              subtitle: _themeModeLabel(appState?.themeMode ?? ThemeMode.system, t),
-              onTap: () => _showThemePicker(context),
-            ),
-            _tileDivider(context),
-            _GreenTile(
-              icon: Icons.language_outlined,
-              title: t.translate('language'),
-              subtitle: _currentLang(t),
-              onTap: () => _showLangPicker(context),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        _SettingsCard(
-          title: t.translate('settings'),
-          children: [
-            _GreenTile(
-              icon: Icons.notifications_outlined,
-              title: t.translate('notifications'),
-              subtitle: '',
-              onTap: () {},
-            ),
-            _tileDivider(context),
-            _GreenTile(
-              icon: Icons.settings_outlined,
-              title: t.translate('server_config'),
-              subtitle: '',
-              onTap: () => ServerConfigDialog.show(context),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        _SettingsCard(
-          title: t.translate('help_support'),
-          children: [
-            _GreenTile(
-              icon: Icons.help_outline_rounded,
-              title: t.translate('get_help'),
-              subtitle: '',
-              onTap: () {},
-            ),
-            _tileDivider(context),
-            _GreenTile(
-              icon: Icons.question_answer_outlined,
-              title: t.translate('faq'),
-              subtitle: '',
-              onTap: () {},
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: errorColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(defaultBorderRadious),
-            ),
-            child: ListTile(
-              onTap: () => _showLogoutDialog(context, ref, t),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(defaultBorderRadious),
+          _ProfileHeader(
+            name: auth.user?.firstName ?? t.translate('student'),
+            email: auth.user?.email ?? 'student@univ-tiaret.dz',
+            isDark: isDark,
+            colors: colors,
+          ),
+          const SizedBox(height: 24),
+          _SectionCard(
+            isDark: isDark,
+            children: [
+              _SettingTile(
+                icon: Icons.person_rounded,
+                title: t.translate('profile'),
+                onTap: () {},
+                isDark: isDark,
+                colors: colors,
               ),
-              leading: SvgPicture.asset(
-                "assets/icons/Logout.svg",
-                height: 24,
-                width: 24,
-                colorFilter: const ColorFilter.mode(
-                  errorColor,
-                  BlendMode.srcIn,
+              _divider(isDark),
+              _SettingTile(
+                icon: Icons.lock_rounded,
+                title: t.translate('change_password'),
+                onTap: () => Navigator.pushNamed(context, changePasswordScreenRoute),
+                isDark: isDark,
+                colors: colors,
+              ),
+              _divider(isDark),
+              _SettingTile(
+                icon: Icons.badge_rounded,
+                title: t.translate('manage_subscription'),
+                subtitle: t.translate('subscription'),
+                onTap: () {},
+                isDark: isDark,
+                colors: colors,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _SectionCard(
+            isDark: isDark,
+            children: [
+              _SettingTile(
+                icon: Icons.download_rounded,
+                title: t.translate('downloads'),
+                onTap: () => Navigator.pushNamed(context, downloadsScreenRoute),
+                isDark: isDark,
+                colors: colors,
+              ),
+              _divider(isDark),
+              _SettingTile(
+                icon: Icons.folder_rounded,
+                title: t.translate('storage'),
+                subtitle: t.translate('manage_storage'),
+                onTap: () {},
+                isDark: isDark,
+                colors: colors,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _SectionCard(
+            isDark: isDark,
+            children: [
+              _SettingTile(
+                icon: Icons.palette_rounded,
+                title: t.translate('theme'),
+                subtitle: _themeModeLabel(appState?.themeMode ?? ThemeMode.system, t),
+                trailing: _ThemeBadge(mode: appState?.themeMode ?? ThemeMode.system),
+                onTap: () => _showThemePicker(context),
+                isDark: isDark,
+                colors: colors,
+              ),
+              _divider(isDark),
+              _SettingTile(
+                icon: Icons.language_rounded,
+                title: t.translate('language'),
+                subtitle: _currentLang(t),
+                trailing: Text(
+                  _currentLang(t),
+                  style: TextStyle(fontSize: 12, color: colors.onSurface.withValues(alpha: 0.4)),
                 ),
+                onTap: () => _showLangPicker(context),
+                isDark: isDark,
+                colors: colors,
               ),
-              title: Text(
-                t.translate('log_out'),
-                style: const TextStyle(
-                  color: errorColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+              _divider(isDark),
+              _SettingTile(
+                icon: Icons.notifications_rounded,
+                title: t.translate('notifications'),
+                trailing: Switch(
+                  value: true,
+                  onChanged: (_) {},
+                  activeThumbColor: AppColors.greenAccent,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onTap: () {},
+                isDark: isDark,
+                colors: colors,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _SectionCard(
+            isDark: isDark,
+            children: [
+              _SettingTile(
+                icon: Icons.dns_rounded,
+                title: t.translate('server_config'),
+                onTap: () => ServerConfigDialog.show(context),
+                isDark: isDark,
+                colors: colors,
+              ),
+              _divider(isDark),
+              _SettingTile(
+                icon: Icons.help_outline_rounded,
+                title: t.translate('get_help'),
+                onTap: () {},
+                isDark: isDark,
+                colors: colors,
+              ),
+              _divider(isDark),
+              _SettingTile(
+                icon: Icons.chat_rounded,
+                title: t.translate('faq'),
+                onTap: () {},
+                isDark: isDark,
+                colors: colors,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: Material(
+              color: errorColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                onTap: () => _showLogoutDialog(context, ref, t),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.logout_rounded, size: 20, color: errorColor),
+                      const SizedBox(width: 10),
+                      Text(
+                        t.translate('log_out'),
+                        style: TextStyle(
+                          color: errorColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }
 
-  Widget _tileDivider(BuildContext context) {
+  Widget _divider(bool isDark) {
     return Divider(
       height: 1,
-      indent: 70,
+      indent: 72,
       endIndent: 16,
-      color: Theme.of(context).dividerTheme.color?.withValues(alpha: 0.3),
+      color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
     );
   }
 
@@ -245,19 +263,19 @@ class SettingsScreen extends ConsumerWidget {
       title: t.translate('language'),
       items: [
         _PickerItem(
-          icon: Icons.language,
+          icon: Icons.language_rounded,
           label: t.translate('english'),
           selected: t.locale.languageCode == 'en',
           onTap: () => _setLang(context, 'en'),
         ),
         _PickerItem(
-          icon: Icons.language,
+          icon: Icons.language_rounded,
           label: t.translate('french'),
           selected: t.locale.languageCode == 'fr',
           onTap: () => _setLang(context, 'fr'),
         ),
         _PickerItem(
-          icon: Icons.language,
+          icon: Icons.language_rounded,
           label: t.translate('arabic'),
           selected: t.locale.languageCode == 'ar',
           onTap: () => _setLang(context, 'ar'),
@@ -277,6 +295,7 @@ class SettingsScreen extends ConsumerWidget {
     required List<_PickerItem> items,
   }) {
     final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -314,7 +333,7 @@ class SettingsScreen extends ConsumerWidget {
             ...items.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: _PickerRow(item: item),
+                child: _PickerRow(item: item, isDark: isDark, colors: colors),
               ),
             ),
           ],
@@ -380,11 +399,12 @@ class _PickerItem {
 
 class _PickerRow extends StatelessWidget {
   final _PickerItem item;
-  const _PickerRow({required this.item});
+  final bool isDark;
+  final ColorScheme colors;
+  const _PickerRow({required this.item, required this.isDark, required this.colors});
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Material(
       color: item.selected
           ? AppColors.greenAccent.withValues(alpha: 0.1)
@@ -403,7 +423,7 @@ class _PickerRow extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: item.selected
                       ? AppColors.greenAccent
-                      : Theme.of(context).brightness == Brightness.dark
+                      : isDark
                           ? Colors.white.withValues(alpha: 0.08)
                           : Colors.black.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(10),
@@ -438,7 +458,7 @@ class _PickerRow extends StatelessWidget {
                     color: AppColors.greenAccent,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check, size: 13, color: Colors.white),
+                  child: Icon(Icons.check_rounded, size: 13, color: Colors.white),
                 ),
             ],
           ),
@@ -448,120 +468,173 @@ class _PickerRow extends StatelessWidget {
   }
 }
 
-class _SettingsCard extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
-  const _SettingsCard({required this.title, required this.children});
+class _ProfileHeader extends StatelessWidget {
+  final String name;
+  final String email;
+  final bool isDark;
+  final ColorScheme colors;
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.backgroundDark : const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white.withValues(alpha: 0.03)
-                : Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.greenAccent.withValues(alpha: 0.08),
-                  Colors.transparent,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 3,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: AppColors.greenAccent,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  title.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.greenAccent,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ...children,
-          const SizedBox(height: 6),
-        ],
-      ),
-    );
-  }
-}
-
-class _GreenTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  const _GreenTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
+  const _ProfileHeader({
+    required this.name,
+    required this.email,
+    required this.isDark,
+    required this.colors,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Material(
-      color: Colors.transparent,
+      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      elevation: isDark ? 0 : 1,
+      shadowColor: Colors.black.withValues(alpha: 0.06),
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {},
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.all(20),
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [AppColors.greenLight, AppColors.greenAccent],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.greenAccent.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Icon(icon, size: 20, color: Colors.white),
+                child: Center(
+                  child: Text(
+                    name.isNotEmpty ? name[0].toUpperCase() : '?',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      email,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colors.onSurface.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Directionality.of(context) == TextDirection.rtl
+                      ? Icons.chevron_left_rounded
+                      : Icons.chevron_right_rounded,
+                  size: 18,
+                  color: colors.onSurface.withValues(alpha: 0.3),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final bool isDark;
+  final List<Widget> children;
+
+  const _SectionCard({required this.isDark, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+class _SettingTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback onTap;
+  final bool isDark;
+  final ColorScheme colors;
+
+  const _SettingTile({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    required this.onTap,
+    required this.isDark,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor = AppColors.greenAccent;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 20, color: iconColor),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -576,10 +649,10 @@ class _GreenTile extends StatelessWidget {
                         color: colors.onSurface,
                       ),
                     ),
-                    if (subtitle.isNotEmpty) ...[
+                    if (subtitle != null && subtitle!.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
-                        subtitle,
+                        subtitle!,
                         style: TextStyle(
                           fontSize: 12,
                           color: colors.onSurface.withValues(alpha: 0.5),
@@ -589,25 +662,43 @@ class _GreenTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.chevron_right,
-                  size: 16,
-                  color: colors.onSurface.withValues(alpha: 0.3),
-                ),
-              ),
+              trailing ??
+                  Icon(
+                    Directionality.of(context) == TextDirection.rtl
+                        ? Icons.chevron_left_rounded
+                        : Icons.chevron_right_rounded,
+                    size: 20,
+                    color: colors.onSurface.withValues(alpha: 0.25),
+                  ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ThemeBadge extends StatelessWidget {
+  final ThemeMode mode;
+  const _ThemeBadge({required this.mode});
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = switch (mode) {
+      ThemeMode.dark => Icons.dark_mode_rounded,
+      ThemeMode.light => Icons.light_mode_rounded,
+      ThemeMode.system => Icons.phone_android_rounded,
+    };
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
     );
   }
 }

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:univ_tiaret/components/list_tile/divider_list_tile.dart';
 
 class ProfileMenuListTile extends StatelessWidget {
   const ProfileMenuListTile({
     super.key,
     required this.text,
-    required this.svgSrc,
+    required this.icon,
     required this.press,
     this.isShowDivider = true,
   });
 
-  final String text, svgSrc;
+  final String text;
+  final IconData icon;
   final VoidCallback press;
   final bool isShowDivider;
 
@@ -19,14 +19,10 @@ class ProfileMenuListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return DividerListTile(
       minLeadingWidth: 24,
-      leading: SvgPicture.asset(
-        svgSrc,
-        height: 24,
-        width: 24,
-        colorFilter: ColorFilter.mode(
-          Theme.of(context).iconTheme.color!,
-          BlendMode.srcIn,
-        ),
+      leading: Icon(
+        icon,
+        size: 24,
+        color: Theme.of(context).iconTheme.color,
       ),
       title: Text(
         text,

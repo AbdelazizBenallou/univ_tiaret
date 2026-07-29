@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:univ_tiaret/constants.dart';
 
 enum FileCategory { pdf, image, text, code, office, unknown }
@@ -149,12 +150,12 @@ IconData fileIcon(String type) {
     case 'odt':
     case 'ods':
     case 'odp':
-      return Icons.article_rounded;
+      return Icons.description_rounded;
     case 'mp4':
     case 'avi':
     case 'mkv':
     case 'mov':
-      return Icons.play_circle_fill_rounded;
+      return Icons.videocam_rounded;
     case 'mp3':
     case 'wav':
     case 'flac':
@@ -168,13 +169,13 @@ IconData fileIcon(String type) {
     case 'webp':
       return Icons.image_rounded;
     case 'svg':
-      return Icons.format_paint_rounded;
+      return Icons.palette_rounded;
     case 'txt':
     case 'md':
     case 'log':
-      return Icons.article_rounded;
+      return Icons.description_rounded;
     case 'csv':
-      return Icons.table_rows_rounded;
+      return Icons.table_chart_rounded;
     case 'py':
       return Icons.code_rounded;
     case 'java':
@@ -205,12 +206,12 @@ IconData fileIcon(String type) {
       return Icons.storage_rounded;
     case 'html':
     case 'css':
-      return Icons.html_rounded;
+      return Icons.code_rounded;
     case 'sh':
     case 'bat':
       return Icons.terminal_rounded;
     case 'json':
-      return Icons.data_object_rounded;
+      return Icons.code_rounded;
     case 'xml':
     case 'yaml':
     case 'yml':

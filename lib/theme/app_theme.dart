@@ -76,7 +76,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: outlinedButtonTheme(borderColor: AppColors.dividerDark),
       inputDecorationTheme: InputDecorationTheme(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         fillColor: AppColors.inputFillDark,
         filled: true,
         hintStyle: const TextStyle(color: AppColors.hintDark),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/constants.dart';
@@ -22,9 +22,43 @@ class _RegisterAccountScreenState extends ConsumerState<RegisterAccountScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _passwordHasMinLength = false;
+  bool _passwordHasUpper = false;
+  bool _passwordHasLower = false;
+  bool _passwordHasNumber = false;
+  bool _passwordHasSpecial = false;
+  bool _passwordTouched = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_onPasswordChanged);
+    _confirmPasswordController.addListener(_onConfirmChanged);
+  }
+
+  void _onPasswordChanged() {
+    final value = _passwordController.text;
+    setState(() {
+      _passwordHasMinLength = value.length >= 8;
+      _passwordHasUpper = RegExp(r'(?=.*?[A-Z])').hasMatch(value);
+      _passwordHasLower = RegExp(r'(?=.*?[a-z])').hasMatch(value);
+      _passwordHasNumber = RegExp(r'(?=.*?[0-9])').hasMatch(value);
+      _passwordHasSpecial = RegExp(r'(?=.*?[#?!@$%^&*-])').hasMatch(value);
+      if (value.isNotEmpty) _passwordTouched = true;
+    });
+  }
+
+  void _onConfirmChanged() {
+    setState(() {});
+  }
+
+  bool get _passwordValid =>
+      _passwordHasMinLength && _passwordHasUpper && _passwordHasLower && _passwordHasNumber && _passwordHasSpecial;
 
   @override
   void dispose() {
+    _passwordController.removeListener(_onPasswordChanged);
+    _confirmPasswordController.removeListener(_onConfirmChanged);
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -126,18 +160,14 @@ class _RegisterAccountScreenState extends ConsumerState<RegisterAccountScreen> {
                         prefixIcon: Padding(
                           padding: const EdgeInsets.symmetric(
                               vertical: 2),
-                          child: SvgPicture.asset(
-                            "assets/icons/Message.svg",
-                            height: 22,
-                            width: 22,
-                            colorFilter: ColorFilter.mode(
-                              Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge!
-                                  .color!
-                                  .withValues(alpha: 0.3),
-                              BlendMode.srcIn,
-                            ),
+                          child: Icon(
+                            Icons.email_rounded,
+                            size: 22,
+                            color: Theme.of(context)
+                                .textTheme
+                                .bodyLarge!
+                                .color!
+                                .withValues(alpha: 0.3),
                           ),
                         ),
                       ),
@@ -145,46 +175,79 @@ class _RegisterAccountScreenState extends ConsumerState<RegisterAccountScreen> {
                     const SizedBox(height: defaultPadding),
                     TextFormField(
                       controller: _passwordController,
-                      validator: passwordValidator(t.translate('password_required'), t.translate('password_min'), t.translate('password_special')).call,
+                      validator: passwordValidator(
+                        t.translate('password_required'),
+                        t.translate('password_min'),
+                        t.translate('password_upper'),
+                        t.translate('password_lower'),
+                        t.translate('password_number'),
+                        t.translate('password_special'),
+                      ).call,
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         hintText: t.translate('password'),
                         prefixIcon: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 2),
-                          child: SvgPicture.asset(
-                            "assets/icons/Lock.svg",
-                            height: 22,
-                            width: 22,
-                            colorFilter: ColorFilter.mode(
-                              Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge!
-                                  .color!
-                                  .withValues(alpha: 0.3),
-                              BlendMode.srcIn,
-                            ),
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Icon(
+                            Icons.lock_rounded,
+                            size: 22,
+                            color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.3),
                           ),
                         ),
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: Theme.of(context)
-                                .textTheme
-                                .bodyLarge!
-                                .color!
-                                .withValues(alpha: 0.4),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_passwordTouched)
+                              Icon(
+                                _passwordValid ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                                size: 20,
+                                color: _passwordValid ? Colors.green : errorColor,
+                              ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                              icon: Icon(
+                                _obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                                color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(defaultBorderRadious),
+                          borderSide: BorderSide(
+                            color: _passwordTouched
+                                ? (_passwordValid ? Colors.green : errorColor)
+                                : Colors.transparent,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(defaultBorderRadious),
+                          borderSide: BorderSide(
+                            color: _passwordTouched
+                                ? (_passwordValid ? Colors.green : errorColor)
+                                : primaryColor,
+                            width: 1.5,
                           ),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    if (_passwordTouched) ...[
+                      _RequirementRow(met: _passwordHasMinLength, label: t.translate('password_min')),
+                      const SizedBox(height: 4),
+                      _RequirementRow(met: _passwordHasUpper, label: t.translate('password_upper')),
+                      const SizedBox(height: 4),
+                      _RequirementRow(met: _passwordHasLower, label: t.translate('password_lower')),
+                      const SizedBox(height: 4),
+                      _RequirementRow(met: _passwordHasNumber, label: t.translate('password_number')),
+                      const SizedBox(height: 4),
+                      _RequirementRow(met: _passwordHasSpecial, label: t.translate('password_special')),
+                    ],
                     const SizedBox(height: defaultPadding),
                     TextFormField(
                       controller: _confirmPasswordController,
@@ -201,39 +264,39 @@ class _RegisterAccountScreenState extends ConsumerState<RegisterAccountScreen> {
                       decoration: InputDecoration(
                         hintText: t.translate('confirm_password'),
                         prefixIcon: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 2),
-                          child: SvgPicture.asset(
-                            "assets/icons/Lock.svg",
-                            height: 24,
-                            width: 24,
-                            colorFilter: ColorFilter.mode(
-                              Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge!
-                                  .color!
-                                  .withValues(alpha: 0.3),
-                              BlendMode.srcIn,
-                            ),
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Icon(
+                            Icons.lock_rounded,
+                            size: 22,
+                            color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.3),
                           ),
                         ),
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _obscureConfirmPassword =
-                                  !_obscureConfirmPassword;
-                            });
-                          },
-                          icon: Icon(
-                            _obscureConfirmPassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: Theme.of(context)
-                                .textTheme
-                                .bodyLarge!
-                                .color!
-                                .withValues(alpha: 0.4),
-                          ),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_confirmPasswordController.text.isNotEmpty)
+                              Icon(
+                                _confirmPasswordController.text == _passwordController.text
+                                    ? Icons.check_circle_rounded
+                                    : Icons.cancel_rounded,
+                                size: 20,
+                                color: _confirmPasswordController.text == _passwordController.text
+                                    ? Colors.green
+                                    : errorColor,
+                              ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _obscureConfirmPassword = !_obscureConfirmPassword;
+                                });
+                              },
+                              icon: Icon(
+                                _obscureConfirmPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                                color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.4),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -276,6 +339,34 @@ class _RegisterAccountScreenState extends ConsumerState<RegisterAccountScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RequirementRow extends StatelessWidget {
+  final bool met;
+  final String label;
+
+  const _RequirementRow({required this.met, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          met ? Icons.check_circle_rounded : Icons.cancel_rounded,
+          size: 14,
+          color: met ? Colors.green : errorColor,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: met ? Colors.green : errorColor,
+          ),
+        ),
+      ],
     );
   }
 }

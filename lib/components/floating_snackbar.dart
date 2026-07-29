@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:univ_tiaret/constants.dart';
 
 enum SnackBarType { success, error, info, warning }
@@ -33,9 +34,9 @@ void showFloatingSnackBar(
 
   final icon = switch (type) {
     SnackBarType.success => Icons.check_circle_rounded,
-    SnackBarType.error => Icons.error_rounded,
-    SnackBarType.info => Icons.info_rounded,
-    SnackBarType.warning => Icons.warning_amber_rounded,
+    SnackBarType.error => Icons.error_outline_rounded,
+    SnackBarType.info => Icons.info_outline_rounded,
+    SnackBarType.warning => Icons.warning_rounded,
   };
 
   scaffold.showSnackBar(

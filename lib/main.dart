@@ -9,11 +9,13 @@ import 'package:univ_tiaret/route/router.dart' as router;
 import 'package:univ_tiaret/theme/app_theme.dart';
 import 'package:univ_tiaret/services/server_config_service.dart';
 import 'package:univ_tiaret/services/notification_service.dart';
+import 'package:univ_tiaret/db/db.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ServerConfigService.loadConfig();
   await NotificationService.instance.init();
+  await DatabaseHelper.instance.database;
   runApp(const ProviderScope(child: MyApp()));
 }
 

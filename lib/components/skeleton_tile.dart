@@ -14,14 +14,14 @@ class SkeletonTile extends StatelessWidget {
       baseColor: baseColor,
       highlightColor: highlightColor,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
             Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? Colors.grey[700] : Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
@@ -34,7 +34,7 @@ class SkeletonTile extends StatelessWidget {
                     height: 14,
                     width: 120,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? Colors.grey[700] : Colors.white,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -43,7 +43,7 @@ class SkeletonTile extends StatelessWidget {
                     height: 10,
                     width: 80,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? Colors.grey[700] : Colors.white,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -54,7 +54,7 @@ class SkeletonTile extends StatelessWidget {
               width: 26,
               height: 26,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? Colors.grey[700] : Colors.white,
                 borderRadius: BorderRadius.circular(8),
               ),
             ),

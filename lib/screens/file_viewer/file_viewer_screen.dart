@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
+
 import 'package:univ_tiaret/utils/file_utils.dart';
 import 'package:univ_tiaret/screens/file_viewer/viewers/image_viewer.dart';
 import 'package:univ_tiaret/screens/file_viewer/viewers/text_viewer.dart';
@@ -123,7 +124,7 @@ class _PdfViewerState extends State<_PdfViewer> {
                 if (_totalPages > 0)
                   Center(
                     child: Padding(
-                      padding: const EdgeInsets.only(right: 4),
+                      padding: const EdgeInsetsDirectional.only(end: 4),
                       child: Text(
                         '$_currentPage/$_totalPages',
                         style: const TextStyle(fontSize: 13),
@@ -132,7 +133,7 @@ class _PdfViewerState extends State<_PdfViewer> {
                   ),
                 IconButton(
                   onPressed: _totalPages > 0 ? _showPageJumpDialog : null,
-                  icon: const Icon(Icons.numbers_rounded, size: 22),
+                  icon: Icon(Icons.tag_rounded, size: 22),
                   tooltip: 'Go to page',
                 ),
                 IconButton(
@@ -147,62 +148,62 @@ class _PdfViewerState extends State<_PdfViewer> {
                 ),
                 PopupMenuButton<String>(
                   onSelected: _onMenuAction,
-                  icon: const Icon(Icons.more_vert_rounded, size: 22),
+                  icon: Icon(Icons.more_vert_rounded, size: 22),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  itemBuilder: (ctx) => [
-                    const PopupMenuItem(
-                      value: 'zoom_in',
-                      child: Row(
-                        children: [
-                          Icon(Icons.zoom_in_rounded, size: 20),
-                          SizedBox(width: 12),
-                          Text('Zoom in'),
-                        ],
+                    itemBuilder: (ctx) => [
+                      PopupMenuItem(
+                        value: 'zoom_in',
+                        child: Row(
+                          children: [
+                            Icon(Icons.zoom_in_rounded, size: 20),
+                            const SizedBox(width: 12),
+                            const Text('Zoom in'),
+                          ],
+                        ),
                       ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'zoom_out',
-                      child: Row(
-                        children: [
-                          Icon(Icons.zoom_out_rounded, size: 20),
-                          SizedBox(width: 12),
-                          Text('Zoom out'),
-                        ],
+                      PopupMenuItem(
+                        value: 'zoom_out',
+                        child: Row(
+                          children: [
+                            Icon(Icons.zoom_out_rounded, size: 20),
+                            const SizedBox(width: 12),
+                            const Text('Zoom out'),
+                          ],
+                        ),
                       ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'fit_page',
-                      child: Row(
-                        children: [
-                          Icon(Icons.fit_screen_rounded, size: 20),
-                          SizedBox(width: 12),
-                          Text('Fit page'),
-                        ],
+                      PopupMenuItem(
+                        value: 'fit_page',
+                        child: Row(
+                          children: [
+                            Icon(Icons.fit_screen_rounded, size: 20),
+                            const SizedBox(width: 12),
+                            const Text('Fit page'),
+                          ],
+                        ),
                       ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'first_page',
-                      child: Row(
-                        children: [
-                          Icon(Icons.first_page_rounded, size: 20),
-                          SizedBox(width: 12),
-                          Text('First page'),
-                        ],
+                      PopupMenuItem(
+                        value: 'first_page',
+                        child: Row(
+                          children: [
+                            Icon(Icons.first_page_rounded, size: 20),
+                            const SizedBox(width: 12),
+                            const Text('First page'),
+                          ],
+                        ),
                       ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'last_page',
-                      child: Row(
-                        children: [
-                          Icon(Icons.last_page_rounded, size: 20),
-                          SizedBox(width: 12),
-                          Text('Last page'),
-                        ],
+                      PopupMenuItem(
+                        value: 'last_page',
+                        child: Row(
+                          children: [
+                            Icon(Icons.last_page_rounded, size: 20),
+                            const SizedBox(width: 12),
+                            const Text('Last page'),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
                 ),
               ],
             )
@@ -290,13 +291,15 @@ class _PdfViewerState extends State<_PdfViewer> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.6),
+                  color: _darkMode
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   'Page $_currentPage of $_totalPages',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: _darkMode ? Colors.white : Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),

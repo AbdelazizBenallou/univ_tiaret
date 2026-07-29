@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 
 class DividerListTile extends StatelessWidget {
   const DividerListTile({
@@ -28,12 +28,11 @@ class DividerListTile extends StatelessWidget {
           onTap: press,
           title: title,
           trailing: isShowForwordArrow
-              ? SvgPicture.asset(
-                  "assets/icons/miniRight.svg",
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context).iconTheme.color!.withValues(alpha: 0.4),
-                    BlendMode.srcIn,
-                  ),
+              ? Icon(
+                  Directionality.of(context) == TextDirection.rtl
+                      ? Icons.chevron_left_rounded
+                      : Icons.chevron_right_rounded,
+                  color: Theme.of(context).iconTheme.color!.withValues(alpha: 0.4),
                 )
               : null,
         ),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:univ_tiaret/db/db.dart';
 import 'package:univ_tiaret/models/lesson_file.dart';
 import 'package:univ_tiaret/services/api_service.dart';
 
-enum LessonFilesStatus { initial, loading, loaded, error, noSubscription }
+enum LessonFilesStatus { initial, loading, loaded, loadingMore, error, noSubscription }
 
 class LessonFilesState {
   final LessonFilesStatus status;
@@ -12,6 +13,7 @@ class LessonFilesState {
   final int page;
   final int totalPages;
   final int total;
+  final bool fromCache;
 
   LessonFilesState({
     this.status = LessonFilesStatus.initial,
@@ -20,6 +22,7 @@ class LessonFilesState {
     this.page = 1,
     this.totalPages = 1,
     this.total = 0,
+    this.fromCache = false,
   });
 
   LessonFilesState copyWith({
@@ -29,6 +32,7 @@ class LessonFilesState {
     int? page,
     int? totalPages,
     int? total,
+    bool? fromCache,
   }) {
     return LessonFilesState(
       status: status ?? this.status,
@@ -37,6 +41,7 @@ class LessonFilesState {
       page: page ?? this.page,
       totalPages: totalPages ?? this.totalPages,
       total: total ?? this.total,
+      fromCache: fromCache ?? this.fromCache,
     );
   }
 }
@@ -47,8 +52,6 @@ final lessonFilesProvider =
 class LessonFilesProvider extends ChangeNotifier {
   LessonFilesState _state = LessonFilesState();
   LessonFilesState get state => _state;
-  bool _isLoadingMore = false;
-  bool get isLoadingMore => _isLoadingMore;
 
   int? _toInt(dynamic v) {
     if (v is int) return v;
@@ -62,16 +65,29 @@ class LessonFilesProvider extends ChangeNotifier {
     required int seasonId,
     int page = 1,
   }) async {
-    if (page > 1) {
-      if (_isLoadingMore) return;
-      _isLoadingMore = true;
-    }
+    if (page == 1) {
+      _state = _state.copyWith(status: LessonFilesStatus.loading);
+      notifyListeners();
 
-    _state = _state.copyWith(
-      status: page == 1 ? LessonFilesStatus.loading : LessonFilesStatus.loaded,
-      files: page == 1 ? [] : _state.files,
-    );
-    notifyListeners();
+      final cached = await LessonFileRepository.getByFilter(
+        moduleId: moduleId,
+        activityTypeId: activityTypeId,
+        seasonId: seasonId,
+      );
+      if (cached.isNotEmpty) {
+        _state = _state.copyWith(
+          status: LessonFilesStatus.loaded,
+          files: cached,
+          fromCache: true,
+          page: 1,
+          error: null,
+        );
+        notifyListeners();
+      }
+    } else {
+      _state = _state.copyWith(status: LessonFilesStatus.loadingMore);
+      notifyListeners();
+    }
 
     try {
       final endpoint =
@@ -109,12 +125,17 @@ class LessonFilesProvider extends ChangeNotifier {
 
         final allFiles = page == 1 ? newFiles : [..._state.files, ...newFiles];
 
+        if (page == 1 && newFiles.isNotEmpty) {
+          await LessonFileRepository.insertAll(newFiles);
+        }
+
         _state = _state.copyWith(
           status: LessonFilesStatus.loaded,
           files: allFiles,
           page: currentPage,
           totalPages: totalPages,
           total: total,
+          fromCache: false,
         );
       } else {
         final message = response['message'] ?? '';
@@ -124,23 +145,28 @@ class LessonFilesProvider extends ChangeNotifier {
             msgLower.contains('subscription')) {
           _state = _state.copyWith(
             status: LessonFilesStatus.noSubscription,
-            error: message,
+            error: 'err_no_subscription',
           );
-        } else {
+        } else if (_state.files.isEmpty) {
           _state = _state.copyWith(
             status: LessonFilesStatus.error,
-            error: message,
+            error: 'err_server_error',
           );
+        } else {
+          _state = _state.copyWith(status: LessonFilesStatus.loaded);
         }
       }
     } catch (e) {
-      _state = _state.copyWith(
-        status: LessonFilesStatus.error,
-        error: 'err_network',
-      );
+      if (_state.files.isEmpty) {
+        _state = _state.copyWith(
+          status: LessonFilesStatus.error,
+          error: 'err_network',
+        );
+      } else {
+        _state = _state.copyWith(status: LessonFilesStatus.loaded);
+      }
     }
 
-    _isLoadingMore = false;
     notifyListeners();
   }
 
@@ -149,7 +175,7 @@ class LessonFilesProvider extends ChangeNotifier {
     required int activityTypeId,
     required int seasonId,
   }) async {
-    if (_isLoadingMore) return;
+    if (_state.status == LessonFilesStatus.loadingMore) return;
     if (_state.page >= _state.totalPages) return;
     await fetchFiles(
       moduleId: moduleId,
@@ -161,7 +187,6 @@ class LessonFilesProvider extends ChangeNotifier {
 
   void reset() {
     _state = LessonFilesState();
-    _isLoadingMore = false;
     notifyListeners();
   }
 }

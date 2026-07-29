@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:univ_tiaret/constants.dart';
 
 Future<T?> showBottomSheetSelector<T>({
@@ -9,7 +9,7 @@ Future<T?> showBottomSheetSelector<T>({
   String? hintText,
   bool searchEnabled = false,
   String? selectedName,
-  String? leadingIconPath,
+  IconData? leadingIcon,
   required String Function(T) itemLabelBuilder,
 }) {
   return showModalBottomSheet<T>(
@@ -22,7 +22,7 @@ Future<T?> showBottomSheetSelector<T>({
       hintText: hintText,
       searchEnabled: searchEnabled,
       selectedName: selectedName,
-      leadingIconPath: leadingIconPath,
+      leadingIcon: leadingIcon,
       itemLabelBuilder: itemLabelBuilder,
     ),
   );
@@ -34,7 +34,7 @@ class _BottomSheetSelector<T> extends StatefulWidget {
   final String? hintText;
   final bool searchEnabled;
   final String? selectedName;
-  final String? leadingIconPath;
+  final IconData? leadingIcon;
   final String Function(T) itemLabelBuilder;
 
   const _BottomSheetSelector({
@@ -43,7 +43,7 @@ class _BottomSheetSelector<T> extends StatefulWidget {
     this.hintText,
     this.searchEnabled = false,
     this.selectedName,
-    this.leadingIconPath,
+    this.leadingIcon,
     required this.itemLabelBuilder,
   });
 
@@ -106,16 +106,8 @@ class _BottomSheetSelectorState<T> extends State<_BottomSheetSelector<T>> {
                 defaultPadding, defaultPadding, defaultPadding, 0),
             child: Row(
               children: [
-                if (widget.leadingIconPath != null) ...[
-                  SvgPicture.asset(
-                    widget.leadingIconPath!,
-                    height: 22,
-                    width: 22,
-                    colorFilter: const ColorFilter.mode(
-                      primaryColor,
-                      BlendMode.srcIn,
-                    ),
-                  ),
+                if (widget.leadingIcon != null) ...[
+                  Icon(widget.leadingIcon, size: 22, color: primaryColor),
                   const SizedBox(width: 10),
                 ],
                 Expanded(
@@ -130,7 +122,7 @@ class _BottomSheetSelectorState<T> extends State<_BottomSheetSelector<T>> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: Icon(Icons.close, color: colors.onSurface.withValues(alpha: 0.5), size: 22),
+                  icon: Icon(Icons.close_rounded, color: colors.onSurface.withValues(alpha: 0.5), size: 22),
                 ),
               ],
             ),
@@ -144,14 +136,14 @@ class _BottomSheetSelectorState<T> extends State<_BottomSheetSelector<T>> {
                 onChanged: (v) => setState(() => _searchQuery = v),
                 decoration: InputDecoration(
                   hintText: widget.hintText ?? 'Search...',
-                  prefixIcon: Icon(Icons.search, color: colors.onSurface.withValues(alpha: 0.5)),
+                  prefixIcon: Icon(Icons.search_rounded, size: 22, color: colors.onSurface.withValues(alpha: 0.5)),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _searchQuery = '');
                           },
-                          icon: const Icon(Icons.clear, size: 18),
+                          icon: Icon(Icons.close_rounded, size: 20),
                         )
                       : null,
                 ),
@@ -192,15 +184,11 @@ class _BottomSheetSelectorState<T> extends State<_BottomSheetSelector<T>> {
                         ),
                         tileColor:
                             isSelected ? primaryColor.withValues(alpha: 0.08) : null,
-                        leading: widget.leadingIconPath != null
-                            ? SvgPicture.asset(
-                                widget.leadingIconPath!,
-                                height: 20,
-                                width: 20,
-                                colorFilter: ColorFilter.mode(
-                                  isSelected ? primaryColor : colors.onSurface.withValues(alpha: 0.5),
-                                  BlendMode.srcIn,
-                                ),
+                        leading: widget.leadingIcon != null
+                            ? Icon(
+                                widget.leadingIcon,
+                                size: 20,
+                                color: isSelected ? primaryColor : colors.onSurface.withValues(alpha: 0.5),
                               )
                             : null,
                         title: Text(
@@ -213,7 +201,7 @@ class _BottomSheetSelectorState<T> extends State<_BottomSheetSelector<T>> {
                           ),
                         ),
                         trailing: isSelected
-                            ? const Icon(Icons.check_circle,
+                            ? Icon(Icons.check_circle_rounded,
                                 color: primaryColor, size: 20)
                             : null,
                       );

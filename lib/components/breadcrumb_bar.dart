@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+
 class BreadcrumbItem {
   final String label;
   final VoidCallback? onTap;
@@ -29,7 +30,9 @@ class BreadcrumbBar extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Icon(
-                    Icons.chevron_right_rounded,
+                    Directionality.of(context) == TextDirection.rtl
+                        ? Icons.chevron_left_rounded
+                        : Icons.chevron_right_rounded,
                     size: 18,
                     color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
                   ),

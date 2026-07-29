@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/constants.dart';
@@ -96,18 +96,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   prefixIcon: Padding(
                     padding: const EdgeInsets.symmetric(
                         vertical: 2),
-                    child: SvgPicture.asset(
-                      "assets/icons/Message.svg",
-                      height: 22,
-                      width: 22,
-                      colorFilter: ColorFilter.mode(
-                        Theme.of(context)
-                            .textTheme
-                            .bodyLarge!
-                            .color!
-                            .withValues(alpha: 0.3),
-                        BlendMode.srcIn,
-                      ),
+                    child: Icon(
+                      Icons.email_rounded,
+                      size: 22,
+                      color: Theme.of(context)
+                          .textTheme
+                          .bodyLarge!
+                          .color!
+                          .withValues(alpha: 0.3),
                     ),
                   ),
                 ),

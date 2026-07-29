@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/components/server_config_dialog.dart';
 import 'package:univ_tiaret/constants.dart';
@@ -42,6 +42,14 @@ class _CodeVerificationScreenState
   void initState() {
     super.initState();
     _startTimer();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final args =
+          ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+      if (args['purpose'] == 'emailVerification') {
+        _autoResendCode();
+      }
+    });
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -187,6 +195,14 @@ class _CodeVerificationScreenState
     });
   }
 
+  Future<void> _autoResendCode() async {
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final email = args['email'] as String;
+    await ref.read(verificationProvider.notifier).resendCode(email);
+    _startTimer();
+  }
+
   void _resendCode() async {
     if (_isLocked || _resendAttempts >= 3) return;
 
@@ -259,20 +275,17 @@ class _CodeVerificationScreenState
               );
             }
           },
-          icon: SvgPicture.asset(
-            "assets/icons/Arrow - Left.svg",
-            height: 24,
-            colorFilter: ColorFilter.mode(
-              Theme.of(context).textTheme.bodyLarge!.color!,
-              BlendMode.srcIn,
-            ),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            size: 24,
+            color: Theme.of(context).textTheme.bodyLarge!.color,
           ),
         ),
         title: Text(t.translate('verification')),
         actions: [
           IconButton(
             onPressed: () => ServerConfigDialog.show(context),
-            icon: const Icon(Icons.settings_outlined),
+            icon: Icon(Icons.settings_rounded, size: 24),
           ),
         ],
       ),
@@ -336,13 +349,13 @@ class _CodeVerificationScreenState
                                       color: successColor,
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(
-                                      Icons.check_rounded,
-                                      color: Colors.white,
-                                      size: 28,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
+                                        child: Icon(
+                                          Icons.check_circle_rounded,
+                                          color: Colors.white,
+                                          size: 28,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
                                   Text(
                                     t.translate('verified'),
                                     style: TextStyle(
@@ -371,7 +384,7 @@ class _CodeVerificationScreenState
                                           color: errorColor,
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.close_rounded,
                                           color: Colors.white,
                                           size: 28,

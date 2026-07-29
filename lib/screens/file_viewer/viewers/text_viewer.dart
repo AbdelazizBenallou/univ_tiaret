@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+
 class TextViewer extends StatefulWidget {
   final String filePath;
   final String fileName;
@@ -110,7 +111,7 @@ class _TextViewerState extends State<TextViewer> {
                 if (_content != null)
                   Center(
                     child: Padding(
-                      padding: const EdgeInsets.only(right: 4),
+                      padding: const EdgeInsetsDirectional.only(end: 4),
                       child: Text(
                         '$_lineCount lines',
                         style: const TextStyle(fontSize: 13),
@@ -218,8 +219,8 @@ class _TextViewerState extends State<TextViewer> {
                   if (_showLineNumbers)
                     Container(
                       width: 56,
-                      padding: const EdgeInsets.only(right: 12),
-                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsetsDirectional.only(end: 12),
+                      alignment: AlignmentDirectional.centerEnd,
                       color: gutterColor,
                       child: Text(
                         '${index + 1}',

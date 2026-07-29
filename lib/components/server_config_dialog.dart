@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
@@ -65,14 +66,15 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
     ApiService.initialize('http://$ip:$port');
 
     final result = await ApiService.healthCheck();
+    final t = AppLocalizations.of(context);
 
     if (!mounted) return;
     setState(() {
       _checking = false;
       _statusSuccess = result['success'] == true;
       _statusMessage = result['success'] == true
-          ? 'Connected successfully'
-          : (result['message'] ?? 'Connection failed');
+          ? t.translate('connected_success')
+          : t.translate('err_connection_failed');
     });
   }
 
@@ -104,9 +106,9 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
             controller: _ipController,
             decoration: InputDecoration(
               hintText: t.translate('server_ip'),
-              prefixIcon: const Padding(
+              prefixIcon: Padding(
                 padding: EdgeInsets.symmetric(vertical: defaultPadding * 0.25),
-                child: Icon(Icons.computer_outlined, size: 24),
+                child: Icon(Icons.dns_rounded, size: 24),
               ),
             ),
           ),
@@ -116,9 +118,9 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
               hintText: t.translate('port'),
-              prefixIcon: const Padding(
+              prefixIcon: Padding(
                 padding: EdgeInsets.symmetric(vertical: defaultPadding * 0.25),
-                child: Icon(Icons.numbers, size: 24),
+                child: Icon(Icons.tag_rounded, size: 24),
               ),
             ),
           ),
@@ -133,7 +135,7 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                       width: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.wifi_find, size: 20),
+                  : Icon(Icons.wifi_rounded, size: 20),
               label: Text(_checking ? t.translate('checking') : t.translate('test_connection')),
             ),
           ),

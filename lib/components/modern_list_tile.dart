@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:univ_tiaret/constants.dart';
 
 enum IconPosition { leading, trailing }
@@ -96,7 +97,7 @@ class ModernListTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
             children: [
               iconWidget,
@@ -128,7 +129,11 @@ class ModernListTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  trailingIcon,
+                  trailingIcon == Icons.chevron_right_rounded
+                      ? (Directionality.of(context) == TextDirection.rtl
+                          ? Icons.chevron_left_rounded
+                          : Icons.chevron_right_rounded)
+                      : trailingIcon,
                   size: 16,
                   color: colors.onSurface.withValues(alpha: 0.3),
                 ),

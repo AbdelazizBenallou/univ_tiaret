@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:univ_tiaret/components/breadcrumb_bar.dart';
 import 'package:univ_tiaret/components/skeleton_tile.dart';
@@ -6,7 +7,9 @@ import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/activities_provider.dart';
 import 'package:univ_tiaret/logic/lesson_files_provider.dart';
+import 'package:univ_tiaret/providers/navigation_provider.dart';
 import 'package:univ_tiaret/route/route_constants.dart';
+import 'package:univ_tiaret/widgets/app_bottom_nav.dart';
 
 class ActivitiesScreen extends ConsumerStatefulWidget {
   final int moduleId;
@@ -42,10 +45,14 @@ class _ActivitiesScreenState extends ConsumerState<ActivitiesScreen> {
     final t = AppLocalizations.of(context);
     final state = ref.watch(activitiesProvider);
     final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.moduleName),
+      ),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: ref.watch(navigationProvider),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,15 +117,12 @@ class _ActivitiesScreenState extends ConsumerState<ActivitiesScreen> {
                                     );
                                   },
                                   child: Container(
-                                  padding: const EdgeInsets.all(14),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).scaffoldBackgroundColor,
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.05)
+                                        : const Color(0xFFF5F5F5),
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: colors.onSurface
-                                          .withValues(alpha: 0.1),
-                                      width: 1,
-                                    ),
                                   ),
                                   child: Row(
                                     children: [
@@ -153,14 +157,14 @@ class _ActivitiesScreenState extends ConsumerState<ActivitiesScreen> {
                                               _activityFullName(
                                                   activity.name, t),
                                               style: TextStyle(
-                                                fontSize: 15,
+                                                fontSize: 14,
                                                 fontWeight: FontWeight.w600,
                                                 color: colors.onSurface,
                                               ),
                                             ),
-                                            const SizedBox(height: 2),
+                                            const SizedBox(height: 3),
                                             Text(
-                                              activity.name,
+                                              activity.name.toUpperCase(),
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 color: colors.onSurface
@@ -171,7 +175,9 @@ class _ActivitiesScreenState extends ConsumerState<ActivitiesScreen> {
                                         ),
                                       ),
                                       Icon(
-                                        Icons.chevron_right_rounded,
+                                        Directionality.of(context) == TextDirection.rtl
+                                            ? Icons.chevron_left_rounded
+                                            : Icons.chevron_right_rounded,
                                         size: 20,
                                         color: colors.onSurface
                                             .withValues(alpha: 0.3),
@@ -191,34 +197,54 @@ class _ActivitiesScreenState extends ConsumerState<ActivitiesScreen> {
 
   Widget _buildError(String message, AppLocalizations t) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.error_outline_rounded,
-            size: 48,
-            color: errorColor.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            message,
-            style: TextStyle(
-              color: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.color
-                  ?.withValues(alpha: 0.5),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: errorColor.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.cloud_off_rounded,
+                size: 36,
+                color: errorColor.withValues(alpha: 0.6),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextButton.icon(
-            onPressed: () => ref
-                .read(activitiesProvider.notifier)
-                .fetchActivities(moduleId: widget.moduleId),
-            icon: const Icon(Icons.refresh_rounded),
-            label: Text(t.translate('try_again')),
-          ),
-        ],
+            const SizedBox(height: 20),
+            Text(
+              t.translate(message),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.color
+                    ?.withValues(alpha: 0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: 160,
+              child: ElevatedButton.icon(
+                onPressed: () => ref
+                    .read(activitiesProvider.notifier)
+                    .fetchActivities(moduleId: widget.moduleId),
+                icon: Icon(Icons.refresh_rounded, size: 18),
+                label: Text(t.translate('try_again')),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -228,15 +254,15 @@ class _ActivitiesScreenState extends ConsumerState<ActivitiesScreen> {
       case 'lesson':
         return Icons.menu_book_rounded;
       case 'td':
-        return Icons.edit_note_rounded;
+        return Icons.edit_rounded;
       case 'tp':
         return Icons.science_rounded;
       case 'exam':
         return Icons.assignment_rounded;
       case 'controle':
-        return Icons.fact_check_rounded;
+        return Icons.assignment_rounded;
       default:
-        return Icons.circle_rounded;
+        return Icons.radio_button_unchecked_rounded;
     }
   }
 

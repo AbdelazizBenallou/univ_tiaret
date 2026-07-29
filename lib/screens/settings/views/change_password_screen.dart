@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/constants.dart';
@@ -98,18 +98,14 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       prefixIcon: Padding(
                         padding: const EdgeInsets.symmetric(
                             vertical: 2),
-                        child: SvgPicture.asset(
-                          "assets/icons/Lock.svg",
-                          height: 22,
-                          width: 22,
-                          colorFilter: ColorFilter.mode(
-                            Theme.of(context)
-                                .textTheme
-                                .bodyLarge!
-                                .color!
-                                .withValues(alpha: 0.3),
-                            BlendMode.srcIn,
-                          ),
+                        child: Icon(
+                          Icons.lock_rounded,
+                          size: 22,
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodyLarge!
+                              .color!
+                              .withValues(alpha: 0.3),
                         ),
                       ),
                       suffixIcon: IconButton(
@@ -118,8 +114,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                         },
                         icon: Icon(
                           _obscureOld
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
                           color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.4),
                         ),
                       ),
@@ -128,25 +124,28 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   const SizedBox(height: defaultPadding),
                   TextFormField(
                     controller: _newPasswordController,
-                    validator: passwordValidator(t.translate('password_required'), t.translate('password_min'), t.translate('password_special')).call,
+                    validator: passwordValidator(
+                      t.translate('password_required'),
+                      t.translate('password_min'),
+                      t.translate('password_upper'),
+                      t.translate('password_lower'),
+                      t.translate('password_number'),
+                      t.translate('password_special'),
+                    ).call,
                     obscureText: _obscureNew,
                     decoration: InputDecoration(
                       hintText: t.translate('new_password'),
                       prefixIcon: Padding(
                         padding: const EdgeInsets.symmetric(
                             vertical: 2),
-                        child: SvgPicture.asset(
-                          "assets/icons/Lock.svg",
-                          height: 22,
-                          width: 22,
-                          colorFilter: ColorFilter.mode(
-                            Theme.of(context)
-                                .textTheme
-                                .bodyLarge!
-                                .color!
-                                .withValues(alpha: 0.3),
-                            BlendMode.srcIn,
-                          ),
+                        child: Icon(
+                          Icons.lock_rounded,
+                          size: 22,
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodyLarge!
+                              .color!
+                              .withValues(alpha: 0.3),
                         ),
                       ),
                       suffixIcon: IconButton(
@@ -155,8 +154,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                         },
                         icon: Icon(
                           _obscureNew
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
                           color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.4),
                         ),
                       ),
@@ -180,18 +179,14 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       prefixIcon: Padding(
                         padding: const EdgeInsets.symmetric(
                             vertical: 2),
-                        child: SvgPicture.asset(
-                          "assets/icons/Lock.svg",
-                          height: 22,
-                          width: 22,
-                          colorFilter: ColorFilter.mode(
-                            Theme.of(context)
-                                .textTheme
-                                .bodyLarge!
-                                .color!
-                                .withValues(alpha: 0.3),
-                            BlendMode.srcIn,
-                          ),
+                        child: Icon(
+                          Icons.lock_rounded,
+                          size: 22,
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodyLarge!
+                              .color!
+                              .withValues(alpha: 0.3),
                         ),
                       ),
                       suffixIcon: IconButton(
@@ -200,8 +195,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                         },
                         icon: Icon(
                           _obscureConfirm
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
                           color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.4),
                         ),
                       ),
