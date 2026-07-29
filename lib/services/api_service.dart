@@ -59,6 +59,21 @@ class ApiService {
     );
   }
 
+  static Future<Map<String, dynamic>> patch(
+    String endpoint, {
+    Map<String, dynamic>? body,
+    bool includeAuth = true,
+    int maxRetries = 2,
+  }) async {
+    return _requestWithRetry(
+      method: 'PATCH',
+      endpoint: endpoint,
+      body: body,
+      includeAuth: includeAuth,
+      maxRetries: maxRetries,
+    );
+  }
+
   static Future<Map<String, dynamic>> post(
     String endpoint, {
     Map<String, dynamic>? body,
@@ -92,6 +107,10 @@ class ApiService {
           response = await http.get(uri, headers: headers).timeout(
                 const Duration(seconds: 10),
               );
+        } else if (method == 'PATCH') {
+          response = await http
+              .patch(uri, headers: headers, body: body != null ? jsonEncode(body) : null)
+              .timeout(const Duration(seconds: 10));
         } else {
           response = await http
               .post(uri, headers: headers, body: body != null ? jsonEncode(body) : null)

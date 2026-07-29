@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:univ_tiaret/components/bottom_sheet_selector.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/auth_provider.dart';
 import 'package:univ_tiaret/logic/subscription_provider.dart';
-import 'package:univ_tiaret/models/semester.dart';
 import 'package:univ_tiaret/logic/semesters_provider.dart';
 
 class SubscribeScreen extends ConsumerStatefulWidget {
@@ -16,7 +14,6 @@ class SubscribeScreen extends ConsumerStatefulWidget {
 }
 
 class _SubscribeScreenState extends ConsumerState<SubscribeScreen> {
-  Semester? _selectedSemester;
   bool _initialLoadDone = false;
 
   @override
@@ -34,51 +31,35 @@ class _SubscribeScreenState extends ConsumerState<SubscribeScreen> {
     if (mounted) setState(() => _initialLoadDone = true);
   }
 
-  Future<void> _pickSemester() async {
-    final t = AppLocalizations.of(context);
+  String? get _currentSemesterName {
     final semesters = ref.read(semestersProvider).semesters;
-    if (semesters.isEmpty) return;
-
-    final result = await showBottomSheetSelector<Semester>(
-      context: context,
-      items: semesters,
-      title: t.translate('select_semester'),
-      leadingIcon: Icons.date_range_rounded,
-      selectedName: _selectedSemester?.name,
-      itemLabelBuilder: (s) => s.name,
-    );
-    if (result != null) setState(() => _selectedSemester = result);
+    final current = semesters.where((s) => s.isCurrent).firstOrNull;
+    return current?.name;
   }
 
-  Future<void> _submitDemand() async {
+  Future<void> _requestPremium() async {
     final t = AppLocalizations.of(context);
     final user = ref.read(authProvider).user;
+    final semesters = ref.read(semestersProvider).semesters;
+    final current = semesters.where((s) => s.isCurrent).firstOrNull;
 
-    if (_selectedSemester == null) {
+    if (current == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.translate('select_semester'))),
+        SnackBar(content: Text(t.translate('no_current_semester'))),
       );
       return;
     }
-
-    final specialityId = user?.specialityId;
-    if (specialityId == null) return;
+    if (user?.specialityId == null) return;
 
     final msg = await ref.read(subscriptionProvider.notifier).createDemand(
-      semesterId: _selectedSemester!.id,
-      specialityId: specialityId,
+      semesterId: current.id,
+      specialityId: user!.specialityId!,
     );
 
     if (mounted) {
-      if (msg == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t.translate('demand_created'))),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg ?? t.translate('demand_created'))),
+      );
     }
   }
 
@@ -86,105 +67,196 @@ class _SubscribeScreenState extends ConsumerState<SubscribeScreen> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final state = ref.watch(subscriptionProvider);
-    final semestersState = ref.watch(semestersProvider);
     final user = ref.watch(authProvider).user;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(t.translate('manage_subscription'))),
+      appBar: AppBar(title: Text(t.translate('subscription'))),
       body: state.loading || !_initialLoadDone
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
               children: [
-                if (state.current != null)
-                  _buildActiveCard(state.current!, t, isDark, colors)
-                else
-                  _buildNoSubscriptionCard(t, isDark, colors),
-
-                if (state.current == null) ...[
-                  const SizedBox(height: 12),
-                  _buildDemandCard(state, t, isDark, colors),
-                ],
-
-                if (state.current == null && state.demands.every((d) => d.status != 'pending')) ...[
-                  const SizedBox(height: 24),
-                  _buildForm(state, semestersState, user, t, isDark, colors),
+                _SemesterCard(
+                  semesterName: _currentSemesterName,
+                  levelName: user?.levelName,
+                  specialityName: user?.specialityName,
+                  isDark: isDark,
+                  colors: colors,
+                ),
+                const SizedBox(height: 20),
+                _SubscriptionStatus(
+                  current: state.current,
+                  demands: state.demands,
+                  loading: state.saving,
+                  isDark: isDark,
+                  colors: colors,
+                  t: t,
+                  onRequestPremium: _requestPremium,
+                ),
+                if (state.demands.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  _DemandsList(
+                    demands: state.demands,
+                    isDark: isDark,
+                    colors: colors,
+                    t: t,
+                  ),
                 ],
               ],
             ),
     );
   }
+}
 
-  Widget _buildActiveCard(dynamic sub, AppLocalizations t, bool isDark, ColorScheme colors) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeader(t.translate('current_subscription'), colors),
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+class _SemesterCard extends StatelessWidget {
+  final String? semesterName;
+  final String? levelName;
+  final String? specialityName;
+  final bool isDark;
+  final ColorScheme colors;
+
+  const _SemesterCard({
+    required this.semesterName,
+    required this.levelName,
+    required this.specialityName,
+    required this.isDark,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.greenLight, AppColors.greenAccent],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.greenAccent.withValues(alpha: 0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
-          child: Column(
-            children: [
-              _infoTile(Icons.date_range_rounded, t.translate('semester'), sub.semesterName),
-              _divider(isDark),
-              _infoTile(Icons.star_rounded, t.translate('subscription_type'), sub.type.toString().toUpperCase()),
-              _divider(isDark),
-              if (sub.specialityName != null)
-                _infoTile(Icons.book_rounded, t.translate('speciality_name'), sub.specialityName),
-              if (sub.specialityName != null) _divider(isDark),
-              _infoTile(Icons.calendar_today_rounded, t.translate('start_date'), _fmtDate(sub.startDate)),
-              _divider(isDark),
-              _infoTile(Icons.event_rounded, t.translate('end_date'), _fmtDate(sub.endDate)),
-              if (sub.remainingDays != null) ...[
-                _divider(isDark),
-                _infoTile(Icons.timer_rounded, t.translate('remaining_days'), '${sub.remainingDays} ${t.translate('days')}'),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.school_rounded, size: 24, color: Colors.white),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        semesterName ?? '-',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        levelName ?? '',
+                        style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.8)),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'PREMIUM',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.8),
+                  ),
+                ),
               ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.success.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+            ),
+            if (specialityName != null) ...[
+              const SizedBox(height: 12),
               Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                t.translate('active').toUpperCase(),
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.success, letterSpacing: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.book_rounded, size: 14, color: Colors.white.withValues(alpha: 0.8)),
+                    const SizedBox(width: 6),
+                    Text(
+                      specialityName!,
+                      style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.9)),
+                    ),
+                  ],
+                ),
               ),
             ],
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
+}
 
-  Widget _buildNoSubscriptionCard(AppLocalizations t, bool isDark, ColorScheme colors) {
+class _SubscriptionStatus extends StatelessWidget {
+  final dynamic current;
+  final List<dynamic> demands;
+  final bool loading;
+  final bool isDark;
+  final ColorScheme colors;
+  final AppLocalizations t;
+  final VoidCallback onRequestPremium;
+
+  const _SubscriptionStatus({
+    required this.current,
+    required this.demands,
+    required this.loading,
+    required this.isDark,
+    required this.colors,
+    required this.t,
+    required this.onRequestPremium,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (current != null) {
+      return _buildActive();
+    }
+
+    final pending = demands.where((d) => d.status == 'pending').toList();
+    if (pending.isNotEmpty) {
+      return _buildPending(pending.first);
+    }
+
+    final rejected = demands.where((d) => d.status == 'rejected').toList();
+    if (rejected.isNotEmpty) {
+      return _buildRejected(rejected.last);
+    }
+
+    return _buildNoSubscription();
+  }
+
+  Widget _buildActive() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -196,309 +268,309 @@ class _SubscribeScreenState extends ConsumerState<SubscribeScreen> {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: AppColors.warning.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.card_membership_rounded, size: 32, color: AppColors.warning),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            t.translate('no_subscription_title'),
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: colors.onSurface),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            t.translate('no_subscription_message'),
-            style: TextStyle(fontSize: 13, color: colors.onSurface.withValues(alpha: 0.5)),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDemandCard(dynamic state, AppLocalizations t, bool isDark, ColorScheme colors) {
-    final pendingDemands = state.demands.where((d) => d.status == 'pending').toList();
-    if (pendingDemands.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeader(t.translate('my_demands'), colors),
-        ...pendingDemands.map((demand) => Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _infoTile(Icons.date_range_rounded, t.translate('semester'), demand.semesterName),
-              _divider(isDark),
-              _infoTile(Icons.star_rounded, t.translate('subscription_type'), demand.type.toUpperCase()),
-              _divider(isDark),
-              if (demand.specialityName != null)
-                _infoTile(Icons.book_rounded, t.translate('speciality_name'), demand.specialityName!),
-              if (demand.specialityName != null) _divider(isDark),
-              _infoTile(Icons.schedule_rounded, t.translate('requested_at'), _fmtDateTime(demand.requestedAt)),
-              _divider(isDark),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.warning.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        t.translate('pending').toUpperCase(),
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.warning, letterSpacing: 0.5),
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      _fmtDateTime(demand.requestedAt),
-                      style: TextStyle(fontSize: 11, color: colors.onSurface.withValues(alpha: 0.4)),
-                    ),
-                  ],
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.verified_rounded, size: 26, color: AppColors.success),
                 ),
-              ),
-            ],
-          ),
-        )),
-      ],
-    );
-  }
-
-  Widget _buildForm(dynamic state, dynamic semestersState, dynamic user, AppLocalizations t, bool isDark, ColorScheme colors) {
-    final loadingSemesters = semestersState.loading;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeader(t.translate('request_subscription'), colors),
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              GestureDetector(
-                onTap: loadingSemesters ? null : _pickSemester,
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Icon(Icons.date_range_rounded, size: 22,
-                        color: colors.onSurface.withValues(alpha: 0.3)),
-                    ),
-                    suffixIcon: Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 12),
-                      child: Icon(Icons.keyboard_arrow_down_rounded,
-                        color: colors.onSurface.withValues(alpha: 0.4), size: 22),
-                    ),
-                    suffixIconConstraints: const BoxConstraints(maxHeight: 24, maxWidth: 36),
-                    labelText: t.translate('select_semester'),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        t.translate('active_subscription'),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.onSurface),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${current.type?.toUpperCase() ?? ''} ${t.translate('subscription')}',
+                        style: TextStyle(fontSize: 12, color: colors.onSurface.withValues(alpha: 0.5)),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    _selectedSemester?.name ?? (loadingSemesters ? t.translate('loading') : ''),
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: _selectedSemester != null ? colors.onSurface : colors.onSurface.withValues(alpha: 0.5),
-                    ),
+                    t.translate('active').toUpperCase(),
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.success, letterSpacing: 0.5),
                   ),
                 ),
-              ),
-              _divider(isDark),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.greenLight, AppColors.greenAccent],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.greenAccent.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.star_rounded, size: 20, color: Colors.white),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(t.translate('subscription_type'), style: TextStyle(fontSize: 12, color: colors.onSurface.withValues(alpha: 0.5))),
-                          const SizedBox(height: 2),
-                          Text('PREMIUM', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: colors.onSurface)),
-                        ],
-                      ),
-                    ),
-                  ],
+              ],
+            ),
+            if (current.remainingDays != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withValues(alpha: 0.03) : const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-              _divider(isDark),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                 child: Row(
                   children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.greenLight, AppColors.greenAccent],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.greenAccent.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.book_rounded, size: 20, color: Colors.white),
+                    Text(
+                      '${current.remainingDays}',
+                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.greenAccent),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(t.translate('speciality_name'), style: TextStyle(fontSize: 12, color: colors.onSurface.withValues(alpha: 0.5))),
-                          const SizedBox(height: 2),
-                          Text(
-                            user?.specialityName ?? '-',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: colors.onSurface),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(width: 8),
+                    Text(
+                      t.translate('remaining_days').toLowerCase(),
+                      style: TextStyle(fontSize: 13, color: colors.onSurface.withValues(alpha: 0.5)),
+                    ),
+                    const Spacer(),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(t.translate('end_date'), style: TextStyle(fontSize: 10, color: colors.onSurface.withValues(alpha: 0.4))),
+                        const SizedBox(height: 2),
+                        Text(
+                          current.endDate != null ? _fmtDate(current.endDate) : '-',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: colors.onSurface),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: state.saving ? null : _submitDemand,
-            child: state.saving
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : Text(t.translate('request_subscription')),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _sectionHeader(String title, ColorScheme colors) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: colors.onSurface.withValues(alpha: 0.5),
-          letterSpacing: 0.5,
+          ],
         ),
       ),
     );
   }
 
-  Widget _divider(bool isDark) {
-    return Divider(
-      height: 1,
-      indent: 72,
-      endIndent: 16,
-      color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
+  Widget _buildPending(dynamic demand) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.hourglass_empty_rounded, size: 26, color: AppColors.warning),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        t.translate('pending_request'),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.onSurface),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${t.translate('requested_at')} ${_fmtDateTime(demand.requestedAt)}',
+                        style: TextStyle(fontSize: 12, color: colors.onSurface.withValues(alpha: 0.5)),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    t.translate('pending').toUpperCase(),
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.warning, letterSpacing: 0.5),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_rounded, size: 16, color: AppColors.warning),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      t.translate('pending_message'),
+                      style: TextStyle(fontSize: 12, color: AppColors.warning.withValues(alpha: 0.8)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _infoTile(IconData icon, String label, String value) {
-    final colors = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.greenLight, AppColors.greenAccent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.greenAccent.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(icon, size: 20, color: Colors.white),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 12, color: colors.onSurface.withValues(alpha: 0.5)),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: colors.onSurface),
-                ),
-              ],
-            ),
+  Widget _buildRejected(dynamic demand) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: errorColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.cancel_rounded, size: 26, color: errorColor),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        t.translate('request_rejected'),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.onSurface),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        t.translate('requested_at'),
+                        style: TextStyle(fontSize: 12, color: colors.onSurface.withValues(alpha: 0.5)),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: errorColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    t.translate('rejected').toUpperCase(),
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: errorColor, letterSpacing: 0.5),
+                  ),
+                ),
+              ],
+            ),
+            if (demand.adminNote != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: errorColor.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  demand.adminNote,
+                  style: TextStyle(fontSize: 12, color: errorColor.withValues(alpha: 0.8)),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoSubscription() {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.card_membership_rounded, size: 28, color: AppColors.warning),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              t.translate('no_subscription_title'),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.onSurface),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              t.translate('no_subscription_action'),
+              style: TextStyle(fontSize: 13, color: colors.onSurface.withValues(alpha: 0.5)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: loading ? null : onRequestPremium,
+                icon: loading
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.star_rounded, size: 20),
+                label: Text(t.translate('request_premium')),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -509,6 +581,147 @@ class _SubscribeScreenState extends ConsumerState<SubscribeScreen> {
   }
 
   String _fmtDateTime(DateTime dt) {
-    return '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+}
+
+class _DemandsList extends StatelessWidget {
+  final List<dynamic> demands;
+  final bool isDark;
+  final ColorScheme colors;
+  final AppLocalizations t;
+
+  const _DemandsList({
+    required this.demands,
+    required this.isDark,
+    required this.colors,
+    required this.t,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            t.translate('history'),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: colors.onSurface.withValues(alpha: 0.5),
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        ...demands.map((demand) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _DemandTile(
+            demand: demand,
+            isDark: isDark,
+            colors: colors,
+            t: t,
+          ),
+        )),
+      ],
+    );
+  }
+}
+
+class _DemandTile extends StatelessWidget {
+  final dynamic demand;
+  final bool isDark;
+  final ColorScheme colors;
+  final AppLocalizations t;
+
+  const _DemandTile({
+    required this.demand,
+    required this.isDark,
+    required this.colors,
+    required this.t,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = switch (demand.status) {
+      'pending' => AppColors.warning,
+      'approved' => AppColors.success,
+      'rejected' => errorColor,
+      _ => colors.onSurface,
+    };
+
+    final statusBg = statusColor.withValues(alpha: 0.1);
+    final statusText = t.translate(demand.status);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: statusBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                demand.status == 'pending'
+                    ? Icons.hourglass_empty_rounded
+                    : demand.status == 'approved'
+                        ? Icons.check_circle_rounded
+                        : Icons.cancel_rounded,
+                size: 20,
+                color: statusColor,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${t.translate('semester')} ${demand.semesterName ?? ''}',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: colors.onSurface),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _fmtDateTime(demand.requestedAt),
+                    style: TextStyle(fontSize: 11, color: colors.onSurface.withValues(alpha: 0.4)),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusBg,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                statusText.toUpperCase(),
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: statusColor, letterSpacing: 0.3),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _fmtDateTime(DateTime dt) {
+    return '${dt.day}/${dt.month}/${dt.year}';
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:univ_tiaret/components/subscription_guard.dart';
+import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/profile_provider.dart';
 
@@ -15,7 +17,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late TextEditingController _firstNameCtrl;
   late TextEditingController _lastNameCtrl;
   late TextEditingController _phoneCtrl;
-  bool _saving = false;
+  late TextEditingController _addressCtrl;
+  late TextEditingController _dateOfBirthCtrl;
+  String? _selectedGender;
 
   @override
   void initState() {
@@ -24,6 +28,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _firstNameCtrl = TextEditingController(text: p?['first_name'] ?? '');
     _lastNameCtrl = TextEditingController(text: p?['last_name'] ?? '');
     _phoneCtrl = TextEditingController(text: p?['phone'] ?? '');
+    _addressCtrl = TextEditingController(text: p?['address'] ?? '');
+    _dateOfBirthCtrl = TextEditingController(text: _fmtDate(p?['date_of_birth']));
+    _selectedGender = p?['gender'];
   }
 
   @override
@@ -31,84 +38,97 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _phoneCtrl.dispose();
+    _addressCtrl.dispose();
+    _dateOfBirthCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final state = ref.watch(profileProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: Text(t.translate('edit_profile'))),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-          children: [
-            const SizedBox(height: 8),
-            _SectionCard(
-              isDark: isDark,
-              title: t.translate('personal_details'),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  child: _buildField(
-                    label: t.translate('first_name'),
-                    controller: _firstNameCtrl,
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+      body: SubscriptionGuard(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+            children: [
+              const SizedBox(height: 8),
+              _SectionCard(
+                isDark: isDark,
+                title: t.translate('personal_details'),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    child: TextFormField(
+                      controller: _firstNameCtrl,
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                      decoration: const InputDecoration(hintText: 'First Name'),
+                    ),
                   ),
-                ),
-                _divider(isDark),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  child: _buildField(
-                    label: t.translate('last_name'),
-                    controller: _lastNameCtrl,
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                  _divider(isDark),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    child: TextFormField(
+                      controller: _lastNameCtrl,
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                      decoration: const InputDecoration(hintText: 'Last Name'),
+                    ),
                   ),
-                ),
-                _divider(isDark),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  child: _buildField(
-                    label: t.translate('phone_number'),
-                    controller: _phoneCtrl,
-                    keyboardType: TextInputType.phone,
-                    isLast: true,
+                  _divider(isDark),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    child: TextFormField(
+                      controller: _phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(hintText: 'Phone'),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saving ? null : _save,
-                child: _saving
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : Text(t.translate('save_changes')),
+                  _divider(isDark),
+                  _GenderSelector(
+                    selectedGender: _selectedGender,
+                    isDark: isDark,
+                    colors: colors,
+                    t: t,
+                    onChanged: (v) => setState(() => _selectedGender = v),
+                  ),
+                  _divider(isDark),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    child: TextFormField(
+                      controller: _dateOfBirthCtrl,
+                      decoration: const InputDecoration(hintText: 'Date of Birth'),
+                    ),
+                  ),
+                  _divider(isDark),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    child: TextFormField(
+                      controller: _addressCtrl,
+                      decoration: const InputDecoration(hintText: 'Address'),
+                      maxLines: 2,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: state.saving ? null : _save,
+                  child: state.saving
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Text(t.translate('save_changes')),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildField({
-    required String label,
-    required TextEditingController controller,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-    bool isLast = false,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      validator: validator,
-      decoration: InputDecoration(
-        hintText: label,
       ),
     );
   }
@@ -124,28 +144,33 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _saving = true);
 
-    try {
-      await ref.read(profileProvider.notifier).update(
-        firstName: _firstNameCtrl.text.trim(),
-        lastName: _lastNameCtrl.text.trim(),
-        phone: _phoneCtrl.text.trim(),
+    final fields = <String, dynamic>{
+      'first_name': _firstNameCtrl.text.trim(),
+      'last_name': _lastNameCtrl.text.trim(),
+    };
+    if (_phoneCtrl.text.trim().isNotEmpty) fields['phone'] = _phoneCtrl.text.trim();
+    if (_addressCtrl.text.trim().isNotEmpty) fields['address'] = _addressCtrl.text.trim();
+    if (_dateOfBirthCtrl.text.trim().isNotEmpty) fields['date_of_birth'] = _dateOfBirthCtrl.text.trim();
+    if (_selectedGender != null) fields['gender'] = _selectedGender;
+
+    final msg = await ref.read(profileProvider.notifier).update(fields);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg ?? AppLocalizations.of(context).translate('profile_updated'))),
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context).translate('profile_updated'))),
-        );
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context).translate('update_failed'))),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
+      if (msg == null) Navigator.pop(context);
+    }
+  }
+
+  String _fmtDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(dateStr);
+      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+    } catch (_) {
+      return dateStr;
     }
   }
 }
@@ -190,6 +215,61 @@ class _SectionCard extends StatelessWidget {
           child: Column(children: children),
         ),
       ],
+    );
+  }
+}
+
+class _GenderSelector extends StatelessWidget {
+  final String? selectedGender;
+  final bool isDark;
+  final ColorScheme colors;
+  final AppLocalizations t;
+  final ValueChanged<String> onChanged;
+
+  const _GenderSelector({
+    required this.selectedGender,
+    required this.isDark,
+    required this.colors,
+    required this.t,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final options = ['Male', 'Female'];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.greenLight, AppColors.greenAccent],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.wc_rounded, size: 20, color: Colors.white),
+          ),
+          const SizedBox(width: 14),
+          ...options.map((g) => Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(g, style: TextStyle(fontSize: 13, color: selectedGender == g ? Colors.white : colors.onSurface)),
+              selected: selectedGender == g,
+              onSelected: (v) => onChanged(g),
+              selectedColor: AppColors.greenAccent,
+              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF5F5F5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              side: BorderSide.none,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            ),
+          )),
+        ],
+      ),
     );
   }
 }

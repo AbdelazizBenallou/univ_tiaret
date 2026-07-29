@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:univ_tiaret/components/subscription_guard.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/download_provider.dart';
@@ -421,7 +422,8 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
       }
     }
 
-    return Container(
+    return SubscriptionGuard(
+      child: Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       width: double.infinity,
       height: double.infinity,
@@ -592,6 +594,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                 : _buildEmpty(t, colors),
           ),
         ],
+      ),
       ),
     );
   }

@@ -8,6 +8,7 @@ import 'package:univ_tiaret/logic/favorite_provider.dart';
 import 'package:univ_tiaret/models/favorite_file.dart';
 import 'package:univ_tiaret/route/route_constants.dart';
 import 'package:univ_tiaret/services/download_service.dart';
+import 'package:univ_tiaret/components/subscription_guard.dart';
 import 'package:univ_tiaret/utils/file_utils.dart';
 
 class FavoritesScreen extends ConsumerStatefulWidget {
@@ -67,7 +68,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
       grouped.putIfAbsent(f.moduleName.isEmpty ? t.translate('other') : f.moduleName, () => []).add(f);
     }
 
-    return Container(
+    return SubscriptionGuard(
+      child: Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       width: double.infinity,
       height: double.infinity,
@@ -162,6 +164,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                     : _buildGroupedList(grouped, colors, isDark, t),
           ),
         ],
+      ),
       ),
     );
   }
