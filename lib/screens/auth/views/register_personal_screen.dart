@@ -56,8 +56,43 @@ class _RegisterPersonalScreenState
     return _selectedProgram?.specialities ?? [];
   }
 
+  List<AcademicSpeciality> get _filteredSpecialities {
+    final all = _specialitiesForProgram;
+    if (_selectedLevelId == null) return all;
+
+    final level = _levelsForProgram.firstWhere(
+      (l) => l.id == _selectedLevelId,
+      orElse: () => AcademicLevel(id: 0, name: ''),
+    );
+    final levelName = level.name.toLowerCase();
+
+    if (levelName.contains('m1') || levelName.contains('master 1')) {
+      return all.where((s) {
+        final n = s.name.toLowerCase();
+        return n.contains('ai') ||
+            n.contains('cyber') ||
+            n.contains('security') ||
+            n.contains('software');
+      }).toList();
+    }
+
+    if (levelName.contains('m2') || levelName.contains('master 2')) {
+      return all.where((s) {
+        final n = s.name.toLowerCase();
+        return n.contains('software') ||
+            n.contains('network') ||
+            n.contains('telecom') ||
+            n.contains('computer') ||
+            n.contains('ai');
+      }).toList();
+    }
+
+    return all;
+  }
+
   bool get _showSpecialityDropdown {
-    return _selectedProgram != null && _selectedProgram!.hasSpecialities;
+    return _selectedProgram != null && _selectedProgram!.hasSpecialities &&
+        _selectedLevelId != null;
   }
 
   Future<void> _pickGender() async {
@@ -71,7 +106,7 @@ class _RegisterPersonalScreenState
       items: genderMap.keys.toList(),
       title: t.translate('select_gender'),
       hintText: t.translate('search_gender'),
-      leadingIcon: Icons.transgender_rounded,
+      leadingIcon: Icons.wc_rounded,
       selectedName: _selectedGender != null ? genderMap[_selectedGender] : null,
       itemLabelBuilder: (g) => genderMap[g] ?? g,
     );
@@ -128,7 +163,7 @@ class _RegisterPersonalScreenState
 
   Future<void> _pickSpeciality() async {
     final t = AppLocalizations.of(context);
-    final specialities = _specialitiesForProgram;
+    final specialities = _filteredSpecialities;
     if (specialities.isEmpty) return;
     final result = await showBottomSheetSelector<AcademicSpeciality>(
       context: context,
@@ -186,7 +221,7 @@ class _RegisterPersonalScreenState
                           padding: const EdgeInsets.symmetric(
                               vertical: 2),
                           child: Icon(
-                            Icons.male_rounded,
+                            Icons.account_circle_rounded,
                             size: 22,
                             color: Theme.of(context)
                                 .textTheme
@@ -209,7 +244,7 @@ class _RegisterPersonalScreenState
                           padding: const EdgeInsets.symmetric(
                               vertical: 2),
                           child: Icon(
-                            Icons.female_rounded,
+                            Icons.account_circle_rounded,
                             size: 22,
                             color: Theme.of(context)
                                 .textTheme
@@ -224,7 +259,7 @@ class _RegisterPersonalScreenState
                     _SelectorField(
                       label: _selectedGender != null ? t.translate(_selectedGender!) : t.translate('gender'),
                       isSelected: _selectedGender != null,
-                      icon: Icons.transgender_rounded,
+                      icon: Icons.wc_rounded,
                       onTap: _pickGender,
                       validator: (v) =>
                           _selectedGender == null ? t.translate('required') : null,
@@ -261,7 +296,7 @@ class _RegisterPersonalScreenState
                       const SizedBox(height: defaultPadding),
                       _SelectorField(
                         label: _selectedSpecialityId != null
-                            ? _specialitiesForProgram
+                            ? _filteredSpecialities
                                 .where((s) => s.id == _selectedSpecialityId)
                                 .firstOrNull
                                 ?.name ??

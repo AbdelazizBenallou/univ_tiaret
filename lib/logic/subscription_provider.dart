@@ -11,12 +11,14 @@ class SubscriptionProvider extends ChangeNotifier {
   CurrentSubscription? _current;
   List<SubscriptionDemand> _demands = [];
   bool _loading = false;
+  bool _loadedOnce = false;
   bool _saving = false;
   String? _error;
 
   CurrentSubscription? get current => _current;
   List<SubscriptionDemand> get demands => _demands;
   bool get loading => _loading;
+  bool get loadedOnce => _loadedOnce;
   bool get saving => _saving;
   String? get error => _error;
 
@@ -27,6 +29,7 @@ class SubscriptionProvider extends ChangeNotifier {
 
     await Future.wait([_fetchCurrent(), _fetchDemands()]);
 
+    _loadedOnce = true;
     _loading = false;
     notifyListeners();
   }

@@ -30,9 +30,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       appBar: AppBar(title: Text(t.translate('profile'))),
       body: state.loading
           ? const Center(child: CircularProgressIndicator())
-          : profile == null
-              ? const Center(child: Text('No profile data'))
-              : ListView(
+          : state.error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.error_outline_rounded, size: 48,
+                            color: Theme.of(context).colorScheme.error),
+                        const SizedBox(height: 16),
+                        Text(
+                          state.error!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: () => ref.read(profileProvider.notifier).load(),
+                          icon: const Icon(Icons.refresh_rounded, size: 18),
+                          label: Text(t.translate('try_again')),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : profile == null
+                  ? const Center(child: Text('No profile data'))
+                  : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
                   children: [
                     _ProfileHeader(

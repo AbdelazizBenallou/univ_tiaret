@@ -23,13 +23,13 @@ class ProfileProvider extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> load() async {
+    _error = null;
     _loading = true;
     notifyListeners();
 
     final cached = await ProfileRepository.get();
     if (cached != null) {
       _profile = cached;
-      _loading = false;
       notifyListeners();
     }
 
@@ -39,8 +39,14 @@ class ProfileProvider extends ChangeNotifier {
         final data = response['data'] as Map<String, dynamic>;
         _profile = _normalize(data);
         await ProfileRepository.upsert(_profile!);
+      } else {
+        _error = response['message'] as String? ?? 'Failed to load profile';
+        if (_profile == null) await syncFromAuth();
       }
-    } catch (_) {}
+    } catch (e) {
+      _error = 'Network error';
+      if (_profile == null) await syncFromAuth();
+    }
 
     _loading = false;
     notifyListeners();

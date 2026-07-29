@@ -150,16 +150,6 @@ class _SemesterCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.school_rounded, size: 24, color: Colors.white),
-                ),
-                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +190,6 @@ class _SemesterCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.book_rounded, size: 14, color: Colors.white.withValues(alpha: 0.8)),
                     const SizedBox(width: 6),
                     Text(
                       specialityName!,
@@ -274,16 +263,6 @@ class _SubscriptionStatus extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.verified_rounded, size: 26, color: AppColors.success),
-                ),
-                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,6 +328,18 @@ class _SubscriptionStatus extends StatelessWidget {
                 ),
               ),
             ],
+            if (current.type != 'premium') ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: loading ? null : onRequestPremium,
+                  child: loading
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Text(t.translate('request_premium')),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -374,16 +365,6 @@ class _SubscriptionStatus extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.hourglass_empty_rounded, size: 26, color: AppColors.warning),
-                ),
-                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,17 +402,9 @@ class _SubscriptionStatus extends StatelessWidget {
                 color: AppColors.warning.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_rounded, size: 16, color: AppColors.warning),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      t.translate('pending_message'),
-                      style: TextStyle(fontSize: 12, color: AppColors.warning.withValues(alpha: 0.8)),
-                    ),
-                  ),
-                ],
+              child: Text(
+                t.translate('pending_message'),
+                style: TextStyle(fontSize: 12, color: AppColors.warning.withValues(alpha: 0.8)),
               ),
             ),
           ],
@@ -460,16 +433,6 @@ class _SubscriptionStatus extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: errorColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.cancel_rounded, size: 26, color: errorColor),
-                ),
-                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -537,16 +500,6 @@ class _SubscriptionStatus extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.card_membership_rounded, size: 28, color: AppColors.warning),
-            ),
-            const SizedBox(height: 14),
             Text(
               t.translate('no_subscription_title'),
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.onSurface),
@@ -561,12 +514,11 @@ class _SubscriptionStatus extends StatelessWidget {
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
+              child: ElevatedButton(
                 onPressed: loading ? null : onRequestPremium,
-                icon: loading
+                child: loading
                     ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.star_rounded, size: 20),
-                label: Text(t.translate('request_premium')),
+                    : Text(t.translate('request_premium')),
               ),
             ),
           ],
@@ -670,24 +622,6 @@ class _DemandTile extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: statusBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                demand.status == 'pending'
-                    ? Icons.hourglass_empty_rounded
-                    : demand.status == 'approved'
-                        ? Icons.check_circle_rounded
-                        : Icons.cancel_rounded,
-                size: 20,
-                color: statusColor,
-              ),
-            ),
-            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

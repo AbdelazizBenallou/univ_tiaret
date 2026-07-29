@@ -16,7 +16,11 @@ class SubscriptionGuard extends ConsumerWidget {
     final colors = Theme.of(context).colorScheme;
     final t = AppLocalizations.of(context);
 
-    if (state.loading) {
+    if (!state.loadedOnce && !state.loading) {
+      Future.microtask(() => ref.read(subscriptionProvider.notifier).loadAll());
+    }
+
+    if (state.loading || !state.loadedOnce) {
       return const Center(child: CircularProgressIndicator());
     }
 
