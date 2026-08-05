@@ -31,6 +31,7 @@ class LessonFileRepository {
         'activity_type': file.activityType,
         'season_id': file.seasonId,
         'uploaded_at': file.uploadedAt,
+        'file_size': file.fileSize,
         'cached_at': now,
       });
     }
@@ -73,6 +74,7 @@ class LessonFileRepository {
       activityType: row['activity_type'] as String,
       seasonId: row['season_id'] as int,
       uploadedAt: row['uploaded_at'] as String,
+      fileSize: row['file_size'] as int?,
     )).toList();
   }
 

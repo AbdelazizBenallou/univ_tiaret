@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:univ_tiaret/constants.dart';
 
-enum FileCategory { pdf, image, text, code, office, unknown }
+enum FileCategory { pdf, image, text, code, office, video, audio, unknown }
 
 FileCategory fileCategory(String type) {
   final t = type.toLowerCase().trim();
@@ -30,6 +30,18 @@ FileCategory fileCategory(String type) {
     'docx', 'doc', 'pptx', 'ppt', 'xlsx', 'xls', 'odt', 'ods', 'odp',
   }.contains(t)) {
     return FileCategory.office;
+  }
+  if (const {
+    'mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', '3gp', 'mpg',
+    'mpeg', 'm2ts', 'ogv',
+  }.contains(t)) {
+    return FileCategory.video;
+  }
+  if (const {
+    'mp3', 'wav', 'flac', 'aac', 'ogg', 'opus', 'm4a', 'wma', 'mid', 'midi',
+    'amr', 'aiff', 'ape',
+  }.contains(t)) {
+    return FileCategory.audio;
   }
   return FileCategory.unknown;
 }
@@ -67,11 +79,24 @@ Color fileColor(String type) {
     case 'avi':
     case 'mkv':
     case 'mov':
-      return const Color(0xFF9B59B6);
+    case 'wmv':
+    case 'flv':
+    case 'webm':
+    case 'm4v':
+    case '3gp':
+    case 'mpg':
+    case 'mpeg':
+    case 'm2ts':
+    case 'ogv':
+      return AppColors.primaryColor;
     case 'mp3':
     case 'wav':
     case 'flac':
     case 'aac':
+    case 'ogg':
+    case 'opus':
+    case 'm4a':
+    case 'wma':
       return const Color(0xFF2ED573);
     case 'jpg':
     case 'jpeg':
@@ -155,11 +180,24 @@ IconData fileIcon(String type) {
     case 'avi':
     case 'mkv':
     case 'mov':
-      return Icons.videocam_rounded;
+    case 'wmv':
+    case 'flv':
+    case 'webm':
+    case 'm4v':
+    case '3gp':
+    case 'mpg':
+    case 'mpeg':
+    case 'm2ts':
+    case 'ogv':
+      return Icons.movie_rounded;
     case 'mp3':
     case 'wav':
     case 'flac':
     case 'aac':
+    case 'ogg':
+    case 'opus':
+    case 'm4a':
+    case 'wma':
       return Icons.audiotrack_rounded;
     case 'jpg':
     case 'jpeg':

@@ -25,21 +25,43 @@ class SettingsScreen extends ConsumerWidget {
       width: double.infinity,
       height: double.infinity,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+        padding: EdgeInsets.zero,
         children: [
           _ProfileHeader(
             name: auth.user?.firstName ?? t.translate('student'),
             email: auth.user?.email ?? 'student@univ-tiaret.dz',
+            avatar: auth.user?.avatar,
             isDark: isDark,
             colors: colors,
           ),
           const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: t.translate('search_settings'),
+                prefixIcon: const Icon(Icons.search_rounded, size: 22),
+                filled: true,
+                fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF0F2F5),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          _SectionHeader(label: t.translate('account'), isDark: isDark, colors: colors),
+          const SizedBox(height: 8),
           _SectionCard(
             isDark: isDark,
             children: [
               _SettingTile(
                 icon: Icons.person_rounded,
+                iconColor: AppColors.primaryColor,
                 title: t.translate('profile'),
+                subtitle: t.translate('see_your_profile'),
                 onTap: () => Navigator.pushNamed(context, profileScreenRoute),
                 isDark: isDark,
                 colors: colors,
@@ -47,7 +69,9 @@ class SettingsScreen extends ConsumerWidget {
               _divider(isDark),
               _SettingTile(
                 icon: Icons.lock_rounded,
+                iconColor: AppColors.primaryColor,
                 title: t.translate('change_password'),
+                subtitle: t.translate('update_security'),
                 onTap: () => Navigator.pushNamed(context, changePasswordScreenRoute),
                 isDark: isDark,
                 colors: colors,
@@ -55,6 +79,7 @@ class SettingsScreen extends ConsumerWidget {
               _divider(isDark),
               _SettingTile(
                 icon: Icons.badge_rounded,
+                iconColor: AppColors.primaryColor,
                 title: t.translate('manage_subscription'),
                 subtitle: t.translate('subscription'),
                 onTap: () => Navigator.pushNamed(context, subscribeScreenRoute),
@@ -63,34 +88,15 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          _SectionCard(
-            isDark: isDark,
-            children: [
-              _SettingTile(
-                icon: Icons.download_rounded,
-                title: t.translate('downloads'),
-                onTap: () => Navigator.pushNamed(context, downloadsScreenRoute),
-                isDark: isDark,
-                colors: colors,
-              ),
-              _divider(isDark),
-              _SettingTile(
-                icon: Icons.folder_rounded,
-                title: t.translate('storage'),
-                subtitle: t.translate('manage_storage'),
-                onTap: () {},
-                isDark: isDark,
-                colors: colors,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
+          _SectionHeader(label: t.translate('preferences'), isDark: isDark, colors: colors),
+          const SizedBox(height: 8),
           _SectionCard(
             isDark: isDark,
             children: [
               _SettingTile(
                 icon: Icons.palette_rounded,
+                iconColor: AppColors.primaryColor,
                 title: t.translate('theme'),
                 subtitle: _themeModeLabel(appState?.themeMode ?? ThemeMode.system, t),
                 trailing: _ThemeBadge(mode: appState?.themeMode ?? ThemeMode.system),
@@ -101,11 +107,12 @@ class SettingsScreen extends ConsumerWidget {
               _divider(isDark),
               _SettingTile(
                 icon: Icons.language_rounded,
+                iconColor: AppColors.primaryColor,
                 title: t.translate('language'),
                 subtitle: _currentLang(t),
                 trailing: Text(
                   _currentLang(t),
-                  style: TextStyle(fontSize: 12, color: colors.onSurface.withValues(alpha: 0.4)),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: colors.onSurface.withValues(alpha: 0.4)),
                 ),
                 onTap: () => _showLangPicker(context),
                 isDark: isDark,
@@ -114,10 +121,13 @@ class SettingsScreen extends ConsumerWidget {
               _divider(isDark),
               _SettingTile(
                 icon: Icons.notifications_rounded,
+                iconColor: AppColors.primaryColor,
                 title: t.translate('notifications'),
+                subtitle: t.translate('push_notifications'),
                 trailing: Switch(
                   value: true,
                   onChanged: (_) {},
+                  activeTrackColor: AppColors.greenAccent.withValues(alpha: 0.4),
                   activeThumbColor: AppColors.greenAccent,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -127,13 +137,44 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
+          _SectionHeader(label: t.translate('storage_data'), isDark: isDark, colors: colors),
+          const SizedBox(height: 8),
+          _SectionCard(
+            isDark: isDark,
+            children: [
+              _SettingTile(
+                icon: Icons.download_rounded,
+                iconColor: AppColors.primaryColor,
+                title: t.translate('downloads'),
+                subtitle: t.translate('manage_downloads'),
+                onTap: () => Navigator.pushNamed(context, downloadsScreenRoute),
+                isDark: isDark,
+                colors: colors,
+              ),
+              _divider(isDark),
+              _SettingTile(
+                icon: Icons.folder_rounded,
+                iconColor: AppColors.primaryColor,
+                title: t.translate('storage'),
+                subtitle: t.translate('manage_storage'),
+                onTap: () {},
+                isDark: isDark,
+                colors: colors,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _SectionHeader(label: t.translate('support'), isDark: isDark, colors: colors),
+          const SizedBox(height: 8),
           _SectionCard(
             isDark: isDark,
             children: [
               _SettingTile(
                 icon: Icons.dns_rounded,
+                iconColor: AppColors.primaryColor,
                 title: t.translate('server_config'),
+                subtitle: t.translate('configure_server'),
                 onTap: () => ServerConfigDialog.show(context),
                 isDark: isDark,
                 colors: colors,
@@ -141,7 +182,9 @@ class SettingsScreen extends ConsumerWidget {
               _divider(isDark),
               _SettingTile(
                 icon: Icons.help_outline_rounded,
+                iconColor: AppColors.primaryColor,
                 title: t.translate('get_help'),
+                subtitle: t.translate('contact_support'),
                 onTap: () {},
                 isDark: isDark,
                 colors: colors,
@@ -149,7 +192,9 @@ class SettingsScreen extends ConsumerWidget {
               _divider(isDark),
               _SettingTile(
                 icon: Icons.chat_rounded,
+                iconColor: AppColors.primaryColor,
                 title: t.translate('faq'),
+                subtitle: t.translate('frequently_asked'),
                 onTap: () {},
                 isDark: isDark,
                 colors: colors,
@@ -157,35 +202,26 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: Material(
-              color: errorColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                onTap: () => _showLogoutDialog(context, ref, t),
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.logout_rounded, size: 20, color: errorColor),
-                      const SizedBox(width: 10),
-                      Text(
-                        t.translate('log_out'),
-                        style: TextStyle(
-                          color: errorColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _showLogoutDialog(context, ref, t),
+                icon: Icon(Icons.logout_rounded, size: 18, color: errorColor),
+                label: Text(
+                  t.translate('log_out'),
+                  style: TextStyle(color: errorColor, fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: errorColor.withValues(alpha: 0.3)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
           ),
+          const SizedBox(height: 40),
         ],
       ),
     );
@@ -194,7 +230,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget _divider(bool isDark) {
     return Divider(
       height: 1,
-      indent: 72,
+      indent: 68,
       endIndent: 16,
       color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
     );
@@ -471,100 +507,151 @@ class _PickerRow extends StatelessWidget {
 class _ProfileHeader extends StatelessWidget {
   final String name;
   final String email;
+  final String? avatar;
   final bool isDark;
   final ColorScheme colors;
 
   const _ProfileHeader({
     required this.name,
     required this.email,
+    this.avatar,
     required this.isDark,
     required this.colors,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      elevation: isDark ? 0 : 1,
-      shadowColor: Colors.black.withValues(alpha: 0.06),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () {},
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.greenLight, AppColors.greenAccent],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.greenAccent.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    name.isNotEmpty ? name[0].toUpperCase() : '?',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: colors.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      email,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: colors.onSurface.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Directionality.of(context) == TextDirection.rtl
-                      ? Icons.chevron_left_rounded
-                      : Icons.chevron_right_rounded,
-                  size: 18,
-                  color: colors.onSurface.withValues(alpha: 0.3),
-                ),
-              ),
-            ],
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF242526) : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: 100,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.primaryColor, AppColors.secondaryColor],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          Transform.translate(
+            offset: const Offset(0, -36),
+            child: Column(
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    gradient: avatar == null
+                        ? const LinearGradient(
+                            colors: [AppColors.greenLight, AppColors.greenAccent],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: isDark ? const Color(0xFF242526) : Colors.white, width: 4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                    image: avatar != null
+                        ? DecorationImage(
+                            image: NetworkImage(avatar!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: avatar == null
+                      ? Center(
+                          child: Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : '?',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        )
+                      : null,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: colors.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  email,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colors.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.person_rounded, size: 16),
+                  label: Text(
+                    'See your profile',
+                    style: TextStyle(fontSize: 13, color: AppColors.greenAccent),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: AppColors.greenAccent.withValues(alpha: 0.4)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String label;
+  final bool isDark;
+  final ColorScheme colors;
+
+  const _SectionHeader({
+    required this.label,
+    required this.isDark,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: colors.onSurface.withValues(alpha: 0.4),
+          letterSpacing: 0.5,
         ),
       ),
     );
@@ -580,14 +667,15 @@ class _SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -598,6 +686,7 @@ class _SectionCard extends StatelessWidget {
 
 class _SettingTile extends StatelessWidget {
   final IconData icon;
+  final Color iconColor;
   final String title;
   final String? subtitle;
   final Widget? trailing;
@@ -607,6 +696,7 @@ class _SettingTile extends StatelessWidget {
 
   const _SettingTile({
     required this.icon,
+    required this.iconColor,
     required this.title,
     this.subtitle,
     this.trailing,
@@ -617,26 +707,25 @@ class _SettingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = AppColors.greenAccent;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: iconColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, size: 20, color: iconColor),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -650,12 +739,12 @@ class _SettingTile extends StatelessWidget {
                       ),
                     ),
                     if (subtitle != null && subtitle!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       Text(
                         subtitle!,
                         style: TextStyle(
                           fontSize: 12,
-                          color: colors.onSurface.withValues(alpha: 0.5),
+                          color: colors.onSurface.withValues(alpha: 0.45),
                         ),
                       ),
                     ],

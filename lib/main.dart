@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:univ_tiaret/l10n/localizations_delegate.dart';
 import 'package:univ_tiaret/l10n/locale_preferences.dart';
 import 'package:univ_tiaret/preferences/theme_preferences.dart';
@@ -13,6 +14,7 @@ import 'package:univ_tiaret/db/db.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
   await ServerConfigService.loadConfig();
   await NotificationService.instance.init();
   await DatabaseHelper.instance.database;

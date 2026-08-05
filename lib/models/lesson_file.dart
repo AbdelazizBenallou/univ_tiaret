@@ -9,6 +9,7 @@ class LessonFile {
   final String activityType;
   final int seasonId;
   final String uploadedAt;
+  final int? fileSize;
 
   LessonFile({
     required this.id,
@@ -21,6 +22,7 @@ class LessonFile {
     required this.activityType,
     required this.seasonId,
     required this.uploadedAt,
+    this.fileSize,
   });
 
   factory LessonFile.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class LessonFile {
       activityType: json['activity_type'] as String? ?? '',
       seasonId: json['season_id'] as int? ?? 0,
       uploadedAt: json['uploaded_at'] as String? ?? '',
+      fileSize: json['file_size'] as int?,
     );
   }
 

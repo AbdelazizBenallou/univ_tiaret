@@ -22,7 +22,7 @@ class ProfileRepository {
     final db = await _db.database;
     final rows = await db.query('user_profile', limit: 1);
     if (rows.isEmpty) return null;
-    final row = rows.first;
+    final row = Map<String, dynamic>.from(rows.first);
     if (row['roles'] is String) {
       row['roles'] = jsonDecode(row['roles'] as String);
     }

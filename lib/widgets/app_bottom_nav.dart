@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/providers/navigation_provider.dart';
-import 'package:univ_tiaret/route/route_constants.dart';
 import 'package:univ_tiaret/logic/download_provider.dart';
 
 class AppBottomNav extends ConsumerWidget {
@@ -23,42 +22,44 @@ class AppBottomNav extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final downloadCount = ref.watch(downloadProvider.select((p) => p.activeCount));
 
-    return Container(
-      padding: const EdgeInsetsDirectional.only(
-        start: defaultPadding,
-        end: defaultPadding,
-        bottom: defaultPadding,
-      ),
-      color: Colors.transparent,
+    return SafeArea(
+      top: false,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: defaultPadding,
-          vertical: defaultPadding / 2,
+        padding: const EdgeInsetsDirectional.only(
+          start: defaultPadding,
+          end: defaultPadding,
+          bottom: defaultPadding,
         ),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-          borderRadius: const BorderRadius.all(
-            Radius.circular(defaultBorderRadious * 2),
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: defaultPadding / 2,
+            vertical: defaultPadding / 2,
           ),
-          boxShadow: [
-            BoxShadow(
-              offset: const Offset(0, 4),
-              blurRadius: 16,
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.08),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+            borderRadius: const BorderRadius.all(
+              Radius.circular(defaultBorderRadious * 2),
             ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildItem(context, ref, 0, Icons.home_rounded, t.translate('home')),
-            _buildItem(context, ref, 1, Icons.bookmark_rounded, t.translate('favorites')),
-            _buildItem(context, ref, 2, Icons.download_rounded, t.translate('downloads'), badge: downloadCount),
-            _buildItem(context, ref, 3, Icons.calendar_month_rounded, t.translate('calendar')),
-            _buildItem(context, ref, 4, Icons.settings_rounded, t.translate('settings_nav')),
-          ],
+            boxShadow: [
+              BoxShadow(
+                offset: const Offset(0, 4),
+                blurRadius: 16,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.08),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(child: _buildItem(context, ref, 0, Icons.home_rounded, t.translate('home'))),
+              Expanded(child: _buildItem(context, ref, 1, Icons.bookmark_rounded, t.translate('favorites'))),
+              Expanded(child: _buildItem(context, ref, 2, Icons.download_rounded, t.translate('downloads'), badge: downloadCount)),
+              Expanded(child: _buildItem(context, ref, 3, Icons.calendar_month_rounded, t.translate('calendar'))),
+              Expanded(child: _buildItem(context, ref, 4, Icons.settings_rounded, t.translate('settings_nav'))),
+            ],
+          ),
         ),
       ),
     );
@@ -76,56 +77,70 @@ class AppBottomNav extends ConsumerWidget {
         ref.read(navigationProvider.notifier).state = index;
         final navigator = Navigator.of(context);
         if (navigator.canPop()) {
-          navigator.pushNamedAndRemoveUntil(
-            entryPointScreenRoute,
-            (route) => false,
-          );
+          navigator.popUntil((route) => route.isFirst);
         }
       },
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Icon(iconData, size: 24, color: iconColor),
-              if (badge > 0)
-                Positioned(
-                  right: -8,
-                  top: -4,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-                    child: Text(
-                      badge.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
+      child: AnimatedContainer(
+        duration: defaultDuration,
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : AppColors.primaryColor.withValues(alpha: 0.1))
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(iconData, size: 24, color: iconColor),
+                if (badge > 0)
+                  Positioned(
+                    right: -8,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
                       ),
-                      textAlign: TextAlign.center,
+                      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                      child: Text(
+                        badge.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
-                ),
-            ],
-          ),
-          if (showLabels) ...[
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? selectedColor : unselectedColor,
-              ),
+              ],
             ),
+            if (showLabels) ...[
+              const SizedBox(height: 4),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    color: isSelected ? selectedColor : unselectedColor,
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

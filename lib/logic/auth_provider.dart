@@ -82,6 +82,7 @@ class AuthProvider extends ChangeNotifier {
       'gender': _user!.gender,
       'student_id': _user!.studentId,
       'phone': _user!.phone,
+      'avatar': _user!.avatar,
       'level_id': _user!.levelId,
       'level_name': _user!.levelName,
       'speciality_id': _user!.specialityId,

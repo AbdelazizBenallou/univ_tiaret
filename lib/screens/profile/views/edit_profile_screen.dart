@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:univ_tiaret/components/subscription_guard.dart';
+import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/profile_provider.dart';
@@ -19,6 +19,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late TextEditingController _phoneCtrl;
   late TextEditingController _addressCtrl;
   late TextEditingController _dateOfBirthCtrl;
+  late TextEditingController _genderCtrl;
   String? _selectedGender;
 
   @override
@@ -29,8 +30,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _lastNameCtrl = TextEditingController(text: p?['last_name'] ?? '');
     _phoneCtrl = TextEditingController(text: p?['phone'] ?? '');
     _addressCtrl = TextEditingController(text: p?['address'] ?? '');
-    _dateOfBirthCtrl = TextEditingController(text: _fmtDate(p?['date_of_birth']));
-    _selectedGender = p?['gender'];
+    _dateOfBirthCtrl = TextEditingController(
+      text: _fmtDate(p?['date_of_birth']),
+    );
+    _selectedGender = p?['gender']?.toString().toLowerCase();
+    _genderCtrl = TextEditingController(text: _genderName(_selectedGender));
   }
 
   @override
@@ -40,7 +44,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _phoneCtrl.dispose();
     _addressCtrl.dispose();
     _dateOfBirthCtrl.dispose();
+    _genderCtrl.dispose();
     super.dispose();
+  }
+
+  String get _initials {
+    final first = _firstNameCtrl.text.trim();
+    final last = _lastNameCtrl.text.trim();
+    final f = first.isNotEmpty ? first[0] : '';
+    final l = last.isNotEmpty ? last[0] : '';
+    final s = '$f$l'.toUpperCase();
+    return s.isNotEmpty ? s : '?';
   }
 
   @override
@@ -48,97 +62,315 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final t = AppLocalizations.of(context);
     final state = ref.watch(profileProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: Text(t.translate('edit_profile'))),
-      body: SubscriptionGuard(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-            children: [
-              const SizedBox(height: 8),
-              _SectionCard(
-                isDark: isDark,
-                title: t.translate('personal_details'),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    child: TextFormField(
-                      controller: _firstNameCtrl,
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-                      decoration: const InputDecoration(hintText: 'First Name'),
-                    ),
-                  ),
-                  _divider(isDark),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    child: TextFormField(
-                      controller: _lastNameCtrl,
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-                      decoration: const InputDecoration(hintText: 'Last Name'),
-                    ),
-                  ),
-                  _divider(isDark),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    child: TextFormField(
-                      controller: _phoneCtrl,
-                      keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(hintText: 'Phone'),
-                    ),
-                  ),
-                  _divider(isDark),
-                  _GenderSelector(
-                    selectedGender: _selectedGender,
-                    isDark: isDark,
-                    colors: colors,
-                    t: t,
-                    onChanged: (v) => setState(() => _selectedGender = v),
-                  ),
-                  _divider(isDark),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    child: TextFormField(
-                      controller: _dateOfBirthCtrl,
-                      decoration: const InputDecoration(hintText: 'Date of Birth'),
-                    ),
-                  ),
-                  _divider(isDark),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    child: TextFormField(
-                      controller: _addressCtrl,
-                      decoration: const InputDecoration(hintText: 'Address'),
-                      maxLines: 2,
-                    ),
-                  ),
-                ],
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+          children: [
+            _buildHeader(t, isDark),
+            const SizedBox(height: 20),
+            _sectionLabel(t.translate('personal_details')),
+            const SizedBox(height: 12),
+            _field(
+              controller: _firstNameCtrl,
+              hint: t.translate('first_name'),
+              icon: Icons.person_rounded,
+              textInputAction: TextInputAction.next,
+              validator: (v) => v == null || v.trim().isEmpty
+                  ? t.translate('required')
+                  : null,
+            ),
+            const SizedBox(height: 16),
+            _field(
+              controller: _lastNameCtrl,
+              hint: t.translate('last_name'),
+              icon: Icons.person_outline_rounded,
+              textInputAction: TextInputAction.next,
+              validator: (v) => v == null || v.trim().isEmpty
+                  ? t.translate('required')
+                  : null,
+            ),
+            const SizedBox(height: 16),
+            _field(
+              controller: _phoneCtrl,
+              hint: t.translate('phone_number'),
+              icon: Icons.phone_rounded,
+              keyboardType: TextInputType.phone,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 16),
+            _field(
+              controller: _dateOfBirthCtrl,
+              hint: t.translate('date_of_birth'),
+              icon: Icons.cake_rounded,
+              readOnly: true,
+              onTap: _pickDate,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.calendar_month_rounded),
+                onPressed: _pickDate,
               ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: state.saving ? null : _save,
-                  child: state.saving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Text(t.translate('save_changes')),
+            ),
+            const SizedBox(height: 16),
+            _field(
+              controller: _genderCtrl,
+              hint: t.translate('gender_label'),
+              icon: Icons.wc_rounded,
+              readOnly: true,
+              onTap: _pickGender,
+              suffixIcon: const Icon(Icons.expand_more_rounded),
+            ),
+            const SizedBox(height: 16),
+            _field(
+              controller: _addressCtrl,
+              hint: t.translate('address'),
+              icon: Icons.home_rounded,
+              maxLines: 2,
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: state.saving ? null : _save,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
+                child: state.saving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        t.translate('save_changes'),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _divider(bool isDark) {
-    return Divider(
-      height: 1,
-      indent: 16,
-      endIndent: 16,
-      color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
+  Widget _field({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    int maxLines = 1,
+    bool readOnly = false,
+    VoidCallback? onTap,
+    String? Function(String?)? validator,
+    Widget? suffixIcon,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      maxLines: maxLines,
+      readOnly: readOnly,
+      onTap: onTap,
+      validator: validator,
+      decoration: InputDecoration(
+        hintText: hint,
+        prefixIcon: Container(
+          margin: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 20, color: AppColors.primaryColor),
+        ),
+        suffixIcon: suffixIcon,
+      ),
+    );
+  }
+
+  Widget _buildHeader(AppLocalizations t, bool isDark) {
+    final email = ref.read(profileProvider).profile?['email'];
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primaryColor,
+            AppColors.secondaryColor.withValues(alpha: 0.85),
+          ],
+        ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+      ),
+      child: Column(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 3),
+                ),
+                child: CircleAvatar(
+                  backgroundColor: AppColors.primaryColor,
+                  child: Text(
+                    _initials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: -2,
+                bottom: 2,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.edit_rounded,
+                    size: 14,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '${_firstNameCtrl.text.trim()} ${_lastNameCtrl.text.trim()}'.trim(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (email != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              email,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final t = AppLocalizations.of(context);
+    final now = DateTime.now();
+    final parsed = _tryParse(_dateOfBirthCtrl.text);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: parsed ?? DateTime(now.year - 20),
+      firstDate: DateTime(now.year - 100),
+      lastDate: now,
+      helpText: t.translate('date_of_birth'),
+    );
+    if (picked != null) {
+      setState(() {
+        _dateOfBirthCtrl.text =
+            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+      });
+    }
+  }
+
+  String _genderName(String? gender) {
+    return gender == 'female' ? 'female' : 'male';
+  }
+
+  Future<void> _pickGender() async {
+    final t = AppLocalizations.of(context);
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(t.translate('male')),
+              trailing: _selectedGender != 'female'
+                  ? const Icon(Icons.check_rounded, color: AppColors.primaryColor)
+                  : null,
+              onTap: () => Navigator.pop(context, 'male'),
+            ),
+            ListTile(
+              title: Text(t.translate('female')),
+              trailing: _selectedGender == 'female'
+                  ? const Icon(Icons.check_rounded, color: AppColors.primaryColor)
+                  : null,
+              onTap: () => Navigator.pop(context, 'female'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice != null) {
+      setState(() {
+        _selectedGender = choice;
+        _genderCtrl.text = _genderName(choice);
+      });
+    }
+  }
+
+  DateTime? _tryParse(String text) {
+    final parts = text.trim().split('/');
+    if (parts.length == 3) {
+      final d = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final y = int.tryParse(parts[2]);
+      if (d != null && m != null && y != null) {
+        try {
+          return DateTime(y, m, d);
+        } catch (_) {}
+      }
+    }
+    return null;
+  }
+
+  Widget _sectionLabel(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.5,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+      ),
     );
   }
 
@@ -148,19 +380,31 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final fields = <String, dynamic>{
       'first_name': _firstNameCtrl.text.trim(),
       'last_name': _lastNameCtrl.text.trim(),
+      'gender': _selectedGender,
     };
-    if (_phoneCtrl.text.trim().isNotEmpty) fields['phone'] = _phoneCtrl.text.trim();
-    if (_addressCtrl.text.trim().isNotEmpty) fields['address'] = _addressCtrl.text.trim();
-    if (_dateOfBirthCtrl.text.trim().isNotEmpty) fields['date_of_birth'] = _dateOfBirthCtrl.text.trim();
-    if (_selectedGender != null) fields['gender'] = _selectedGender;
+    if (_phoneCtrl.text.trim().isNotEmpty) {
+      fields['phone'] = _phoneCtrl.text.trim();
+    }
+    if (_addressCtrl.text.trim().isNotEmpty) {
+      fields['address'] = _addressCtrl.text.trim();
+    }
+    if (_dateOfBirthCtrl.text.trim().isNotEmpty) {
+      fields['date_of_birth'] = _dateOfBirthCtrl.text.trim();
+    }
 
     final msg = await ref.read(profileProvider.notifier).update(fields);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg ?? AppLocalizations.of(context).translate('profile_updated'))),
+    if (!mounted) return;
+    final t = AppLocalizations.of(context);
+    if (msg == null) {
+      showFloatingSnackBar(
+        context,
+        message: t.translate('profile_updated'),
+        type: SnackBarType.success,
       );
-      if (msg == null) Navigator.pop(context);
+      Navigator.pop(context);
+    } else {
+      showFloatingSnackBar(context, message: msg, type: SnackBarType.error);
     }
   }
 
@@ -172,104 +416,5 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     } catch (_) {
       return dateStr;
     }
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  final bool isDark;
-  final String title;
-  final List<Widget> children;
-
-  const _SectionCard({required this.isDark, required this.title, required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: colors.onSurface.withValues(alpha: 0.5),
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(children: children),
-        ),
-      ],
-    );
-  }
-}
-
-class _GenderSelector extends StatelessWidget {
-  final String? selectedGender;
-  final bool isDark;
-  final ColorScheme colors;
-  final AppLocalizations t;
-  final ValueChanged<String> onChanged;
-
-  const _GenderSelector({
-    required this.selectedGender,
-    required this.isDark,
-    required this.colors,
-    required this.t,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final options = ['Male', 'Female'];
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.greenLight, AppColors.greenAccent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.wc_rounded, size: 20, color: Colors.white),
-          ),
-          const SizedBox(width: 14),
-          ...options.map((g) => Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(g, style: TextStyle(fontSize: 13, color: selectedGender == g ? Colors.white : colors.onSurface)),
-              selected: selectedGender == g,
-              onSelected: (v) => onChanged(g),
-              selectedColor: AppColors.greenAccent,
-              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF5F5F5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              side: BorderSide.none,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            ),
-          )),
-        ],
-      ),
-    );
   }
 }

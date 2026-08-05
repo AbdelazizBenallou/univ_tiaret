@@ -40,12 +40,18 @@ class ProfileProvider extends ChangeNotifier {
         _profile = _normalize(data);
         await ProfileRepository.upsert(_profile!);
       } else {
-        _error = response['message'] as String? ?? 'Failed to load profile';
+        final message = response['message'] as String? ?? 'Failed to load profile';
+        debugPrint('Profile load failed: $message (${response['errors'] ?? response})');
+        _error = message;
         if (_profile == null) await syncFromAuth();
       }
-    } catch (e) {
-      _error = 'Network error';
-      if (_profile == null) await syncFromAuth();
+    } catch (e, st) {
+      debugPrint('Profile load error: $e\n$st');
+      _error = 'Profile load error: $e';
+      if (_profile == null) {
+        await syncFromAuth();
+        if (_profile != null) _error = null;
+      }
     }
 
     _loading = false;
@@ -74,11 +80,14 @@ class ProfileProvider extends ChangeNotifier {
 
       _saving = false;
       notifyListeners();
-      return response['message'] as String? ?? 'Update failed';
-    } catch (e) {
+      final message = response['message'] as String? ?? 'Update failed';
+      debugPrint('Profile update failed: $message (${response['errors'] ?? response})');
+      return message;
+    } catch (e, st) {
+      debugPrint('Profile update error: $e\n$st');
       _saving = false;
       notifyListeners();
-      return 'Network error';
+      return 'Profile update error: $e';
     }
   }
 
@@ -90,6 +99,7 @@ class ProfileProvider extends ChangeNotifier {
     return {
       'id': data['id'],
       'user_id': data['user_id'],
+      'email': data['email'],
       'first_name': data['first_name'],
       'last_name': data['last_name'],
       'phone': data['phone'],
@@ -121,6 +131,7 @@ class ProfileProvider extends ChangeNotifier {
       'gender': authUser.gender,
       'student_id': authUser.studentId,
       'phone': authUser.phone,
+      'avatar': authUser.avatar,
       'level_id': authUser.levelId,
       'level_name': authUser.levelName,
       'speciality_id': authUser.specialityId,

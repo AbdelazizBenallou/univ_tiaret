@@ -358,7 +358,7 @@ class _ModuleListTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF5F5F5),
           borderRadius: BorderRadius.circular(12),

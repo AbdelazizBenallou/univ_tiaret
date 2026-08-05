@@ -5,6 +5,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:univ_tiaret/components/breadcrumb_bar.dart';
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/components/skeleton_tile.dart';
+import 'package:univ_tiaret/components/subscription_guard.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/download_provider.dart';
@@ -324,7 +325,7 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
             : _buildFileList(state, t, colors, isDark);
 
       case LessonFilesStatus.noSubscription:
-        return _buildNoSubscription(t, colors, isDark);
+        return const NoSubscriptionView();
 
       case LessonFilesStatus.error:
         return _buildError(state.error ?? 'err_network', t);
@@ -336,77 +337,6 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
         }
         return _buildFileList(state, t, colors, isDark);
     }
-  }
-
-  Widget _buildNoSubscription(
-      AppLocalizations t, ColorScheme colors, bool isDark) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.lock_rounded,
-                size: 40,
-                color: AppColors.warning,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              t.translate('no_subscription_title'),
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: colors.onSurface,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              t.translate('no_subscription_message'),
-              style: TextStyle(
-                fontSize: 14,
-                color: colors.onSurface.withValues(alpha: 0.5),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, subscribeScreenRoute);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  t.translate('subscribe_now'),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildError(String message, AppLocalizations t) {
@@ -596,7 +526,7 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
                 GestureDetector(
                   onTap: _deleteSelected,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: errorColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -653,23 +583,20 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
       itemCount: filtered.length,
       itemBuilder: (context, index) {
         final file = filtered[index];
-        final isDownloaded = dlNotifier.isDownloaded(file.id);
-        final isActive = dlNotifier.isActive(file.id);
+        // ignore: non_constant_identifier_names
+        final is_Download = dlNotifier.isDownloaded(file.id);
         final isPreparing = _preparingDownloads.contains(file.id);
         return _FileTile(
           file: file,
           isDark: isDark,
           colors: colors,
-          isDownloaded: isDownloaded,
-          isActive: isActive,
           isPreparing: isPreparing,
           isSelected: _selectedIds.contains(file.id),
           selectionMode: _selectionMode,
           onTap: _selectionMode
-              ? (isDownloaded ? () => _toggleSelection(file.id) : null)
+              ? (is_Download ? () => _toggleSelection(file.id) : null)
               : () => _onTapFile(file),
-          onLongPress: isDownloaded ? () => _enterSelection(file.id) : null,
-          onDownload: () => _onDownload(file),
+          onLongPress: is_Download ? () => _enterSelection(file.id) : null,
           moduleName: widget.moduleName,
           activityName: widget.activityTypeName,
           moduleId: widget.moduleId,
@@ -684,7 +611,12 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
 
   void _onTapFile(LessonFile file) {
     final dp = ref.read(downloadProvider.notifier);
-    if (!dp.isDownloaded(file.id)) return;
+    if (dp.isActive(file.id) || _preparingDownloads.contains(file.id)) return;
+
+    if (!dp.isDownloaded(file.id)) {
+      _onDownload(file);
+      return;
+    }
 
     final localPath = DownloadService.getLocalPath(file.id);
     if (localPath == null) return;
@@ -765,14 +697,11 @@ class _FileTile extends ConsumerWidget {
   final LessonFile file;
   final bool isDark;
   final ColorScheme colors;
-  final bool isDownloaded;
-  final bool isActive;
   final bool isPreparing;
   final bool isSelected;
   final bool selectionMode;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
-  final VoidCallback onDownload;
   final String moduleName;
   final String activityName;
   final int moduleId;
@@ -785,10 +714,7 @@ class _FileTile extends ConsumerWidget {
     required this.file,
     required this.isDark,
     required this.colors,
-    required this.isDownloaded,
-    required this.isActive,
     required this.onTap,
-    required this.onDownload,
     required this.moduleName,
     required this.activityName,
     required this.moduleId,
@@ -801,89 +727,6 @@ class _FileTile extends ConsumerWidget {
     this.selectionMode = false,
     this.onLongPress,
   });
-
-  void _showFileMenu(BuildContext context, WidgetRef ref) {
-    final t = AppLocalizations.of(context);
-    final isFav = ref.read(favoriteProvider).isFavorited(file.id);
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(
-                  isFav ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                  color: isFav ? const Color(0xFFFFBE21) : AppColors.greenAccent,
-                ),
-                title: Text(isFav ? 'Unsave' : 'Save'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  final fp = ref.read(favoriteProvider.notifier);
-                  if (isFav) {
-                    fp.remove(file.id);
-                  } else {
-                    fp.add(FavoriteFile(
-                      fileId: file.id,
-                      fileName: file.name,
-                      fileType: file.fileType,
-                      fileUrl: file.url,
-                      moduleId: moduleId,
-                      moduleName: moduleName,
-                      seasonId: seasonId,
-                      seasonName: seasonName,
-                      semesterName: semesterName,
-                      activityTypeId: activityTypeId,
-                      activityName: activityName,
-                    ));
-                  }
-                },
-              ),
-              if (!isDownloaded)
-                ListTile(
-                  leading: Icon(Icons.download_rounded, color: AppColors.greenAccent),
-                  title: Text(t.translate('download')),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    onDownload();
-                  },
-                ),
-              if (isDownloaded) ...[
-                ListTile(
-                  leading: Icon(Icons.open_in_new_rounded, color: AppColors.greenAccent),
-                  title: Text(t.translate('open_external')),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _openExternal();
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.delete_rounded, color: errorColor),
-                  title: Text(t.translate('delete')),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _confirmDelete(context, ref);
-                  },
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _openExternal() {
-    final localPath = DownloadService.getLocalPath(file.id);
-    if (localPath != null) {
-      OpenFilex.open(localPath);
-    }
-  }
 
   void _confirmDelete(BuildContext context, WidgetRef ref) {
     showDialog(
@@ -925,7 +768,9 @@ class _FileTile extends ConsumerWidget {
       return 'active:${(item.progress * 100).toInt()}';
     }));
 
-    final currentIsDownloaded = dlSignature == 'done';
+    // ignore: non_constant_identifier_names
+    final bool is_Download = dlSignature == 'done';
+    final bool isFileActive = dlSignature.startsWith('active');
     final isFav = ref.watch(favoriteProvider.select((p) => p.isFavorited(file.id)));
 
     return Padding(
@@ -940,11 +785,11 @@ class _FileTile extends ConsumerWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: InkWell(
-          onTap: currentIsDownloaded ? onTap : null,
+          onTap: onTap,
           onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
                 Stack(
@@ -965,7 +810,7 @@ class _FileTile extends ConsumerWidget {
                       ),
                       child: Icon(fileIcon(file.fileType), size: 20, color: Colors.white),
                     ),
-                    if (currentIsDownloaded)
+                    if (is_Download)
                       Positioned(
                         right: -2,
                         bottom: -2,
@@ -1015,6 +860,13 @@ class _FileTile extends ConsumerWidget {
                               style: TextStyle(fontSize: 11, color: colors.onSurface.withValues(alpha: 0.45)),
                             ),
                           ),
+                          if (file.fileSize != null) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              formatFileSize(file.fileSize!),
+                              style: TextStyle(fontSize: 10, color: colors.onSurface.withValues(alpha: 0.35)),
+                            ),
+                          ],
                           const SizedBox(width: 6),
                           Text(
                             date,
@@ -1025,7 +877,80 @@ class _FileTile extends ConsumerWidget {
                     ],
                   ),
                 ),
-                if (!selectionMode) ...[
+                if (selectionMode)
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected
+                          ? AppColors.greenAccent
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.greenAccent
+                            : colors.onSurface.withValues(alpha: 0.4),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: isSelected
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 18,
+                            color: Colors.white,
+                          )
+                        : null,
+                  )
+                else ...[
+                  if (is_Download) ...[
+                    GestureDetector(
+                      onTap: () {
+                        final localPath = DownloadService.getLocalPath(file.id);
+                        if (localPath != null) OpenFilex.open(localPath);
+                      },
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.greenAccent.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.open_in_new_rounded,
+                          size: 18,
+                          color: AppColors.greenAccent,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: () => _confirmDelete(context, ref),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: errorColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.delete_outline_rounded,
+                          size: 18,
+                          color: errorColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ] else if (isFileActive || isPreparing) ...[
+                    const Padding(
+                      padding: EdgeInsets.all(9),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
                   GestureDetector(
                     onTap: () {
                       final fp = ref.read(favoriteProvider.notifier);
@@ -1063,19 +988,6 @@ class _FileTile extends ConsumerWidget {
                             ? const Color(0xFFFFBE21)
                             : colors.onSurface.withValues(alpha: 0.4),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  GestureDetector(
-                    onTap: () => _showFileMenu(context, ref),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: colors.onSurface.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.more_vert_rounded, size: 18, color: colors.onSurface.withValues(alpha: 0.4)),
                     ),
                   ),
                 ],

@@ -6,7 +6,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
 
   static Database? _database;
-  static const int _dbVersion = 5;
+  static const int _dbVersion = 6;
   static const String _dbName = 'univ_tiaret_cache.db';
 
   Future<Database> get database async {
@@ -84,6 +84,7 @@ class DatabaseHelper {
         activity_type TEXT NOT NULL DEFAULT '',
         season_id INTEGER NOT NULL,
         uploaded_at TEXT NOT NULL DEFAULT '',
+        file_size INTEGER,
         cached_at TEXT NOT NULL,
         PRIMARY KEY (id, module_id, activity_type_id)
       )
@@ -132,6 +133,15 @@ class DatabaseHelper {
         speciality_name TEXT,
         roles TEXT,
         status TEXT,
+        user_id INTEGER,
+        phone_provider_id INTEGER,
+        date_of_birth TEXT,
+        address TEXT,
+        avatar TEXT,
+        speciality_code TEXT,
+        phone_provider_name TEXT,
+        phone_provider_code TEXT,
+        social_media_links TEXT,
         updated_at TEXT
       )
     ''');
@@ -220,6 +230,27 @@ class DatabaseHelper {
           updated_at TEXT
         )
       ''');
+    }
+    if (oldVersion < 6) {
+      final columns = [
+        'user_id INTEGER',
+        'phone_provider_id INTEGER',
+        'date_of_birth TEXT',
+        'address TEXT',
+        'avatar TEXT',
+        'speciality_code TEXT',
+        'phone_provider_name TEXT',
+        'phone_provider_code TEXT',
+        'social_media_links TEXT',
+      ];
+      for (final col in columns) {
+        try {
+          await db.execute('ALTER TABLE user_profile ADD COLUMN $col');
+        } catch (_) {}
+      }
+      try {
+        await db.execute('ALTER TABLE cached_lesson_files ADD COLUMN file_size INTEGER');
+      } catch (_) {}
     }
   }
 

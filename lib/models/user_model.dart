@@ -12,6 +12,7 @@ class UserModel {
   final String? specialityName;
   final String? studentId;
   final String? phone;
+  final String? avatar;
 
   UserModel({
     this.id,
@@ -27,6 +28,7 @@ class UserModel {
     this.specialityName,
     this.studentId,
     this.phone,
+    this.avatar,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,7 @@ class UserModel {
       specialityName: speciality?['name'] ?? json['speciality_name'],
       studentId: profile?['student_id'] ?? json['student_id'],
       phone: profile?['phone'] ?? json['phone'],
+      avatar: profile?['avatar'] ?? json['avatar'],
     );
   }
 
@@ -68,6 +71,7 @@ class UserModel {
       'speciality_name': specialityName,
       'student_id': studentId,
       'phone': phone,
+      'avatar': avatar,
     };
   }
 }

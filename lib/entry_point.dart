@@ -23,6 +23,7 @@ class EntryPoint extends ConsumerStatefulWidget {
 class _EntryPointState extends ConsumerState<EntryPoint> {
   late final List<Widget> _pages;
   int _currentIndex;
+  int _transitionDirection = 1;
 
   _EntryPointState() : _currentIndex = 0;
 
@@ -41,7 +42,11 @@ class _EntryPointState extends ConsumerState<EntryPoint> {
 
   @override
   Widget build(BuildContext context) {
-    _currentIndex = ref.watch(navigationProvider);
+    final nextIndex = ref.watch(navigationProvider);
+    if (nextIndex != _currentIndex) {
+      _transitionDirection = nextIndex > _currentIndex ? 1 : -1;
+    }
+    _currentIndex = nextIndex;
     final downloadCount = ref.watch(downloadProvider.select((p) => p.activeCount));
 
     return Scaffold(
@@ -118,11 +123,17 @@ class _EntryPointState extends ConsumerState<EntryPoint> {
       ),
       body: PageTransitionSwitcher(
         duration: defaultDuration,
-        transitionBuilder: (child, animation, secondAnimation) {
-          return FadeThroughTransition(
-            animation: animation,
-            secondaryAnimation: secondAnimation,
-            child: child,
+        transitionBuilder: (child, animation, secondaryAnimation) {
+          final direction = _transitionDirection.toDouble();
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: Offset(0.12 * direction, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+              child: child,
+            ),
           );
         },
         child: _pages[_currentIndex],

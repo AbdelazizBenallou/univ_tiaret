@@ -6,6 +6,7 @@ import 'package:univ_tiaret/utils/file_utils.dart';
 import 'package:univ_tiaret/screens/file_viewer/viewers/image_viewer.dart';
 import 'package:univ_tiaret/screens/file_viewer/viewers/text_viewer.dart';
 import 'package:univ_tiaret/screens/file_viewer/viewers/office_viewer.dart';
+import 'package:univ_tiaret/screens/file_viewer/viewers/media_player_screen.dart';
 
 class FileViewerScreen extends StatelessWidget {
   final String filePath;
@@ -48,6 +49,13 @@ class FileViewerScreen extends StatelessWidget {
         );
       case FileCategory.office:
         return OfficeViewer(
+          filePath: filePath,
+          fileName: fileName,
+          fileType: fileType,
+        );
+      case FileCategory.video:
+      case FileCategory.audio:
+        return MediaPlayerScreen(
           filePath: filePath,
           fileName: fileName,
           fileType: fileType,

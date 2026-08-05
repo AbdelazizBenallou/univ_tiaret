@@ -56,38 +56,19 @@ class _RegisterPersonalScreenState
     return _selectedProgram?.specialities ?? [];
   }
 
+  static const _levelSpecialities = {
+    4: {4, 5, 6},   // M1 → Software Engineering, Cyber Security, Artificial Intelligence
+    5: {1, 2, 3, 4}, // M2 → Networks & Telecom, IAD, Computer Engineering, Software Engineering
+  };
+
   List<AcademicSpeciality> get _filteredSpecialities {
     final all = _specialitiesForProgram;
     if (_selectedLevelId == null) return all;
 
-    final level = _levelsForProgram.firstWhere(
-      (l) => l.id == _selectedLevelId,
-      orElse: () => AcademicLevel(id: 0, name: ''),
-    );
-    final levelName = level.name.toLowerCase();
+    final allowedIds = _levelSpecialities[_selectedLevelId];
+    if (allowedIds == null) return all;
 
-    if (levelName.contains('m1') || levelName.contains('master 1')) {
-      return all.where((s) {
-        final n = s.name.toLowerCase();
-        return n.contains('ai') ||
-            n.contains('cyber') ||
-            n.contains('security') ||
-            n.contains('software');
-      }).toList();
-    }
-
-    if (levelName.contains('m2') || levelName.contains('master 2')) {
-      return all.where((s) {
-        final n = s.name.toLowerCase();
-        return n.contains('software') ||
-            n.contains('network') ||
-            n.contains('telecom') ||
-            n.contains('computer') ||
-            n.contains('ai');
-      }).toList();
-    }
-
-    return all;
+    return all.where((s) => allowedIds.contains(s.id)).toList();
   }
 
   bool get _showSpecialityDropdown {

@@ -585,6 +585,13 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                                 item: item,
                                 isDark: isDark,
                                 colors: colors,
+                                onTap: item.localPath != null
+                                    ? () => Navigator.pushNamed(context, fileViewerScreenRoute, arguments: {
+                                          'filePath': item.localPath,
+                                          'fileName': item.name,
+                                          'fileType': item.fileType,
+                                        })
+                                    : null,
                               ),
                             )),
                         ],
@@ -732,7 +739,7 @@ class _ActiveDownloadTile extends ConsumerWidget {
           : const Color(0xFFF5F5F5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -784,27 +791,45 @@ class _ActiveDownloadTile extends ConsumerWidget {
                     ],
                   ),
                 ),
-                SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 3,
-                        backgroundColor: colors.onSurface.withValues(alpha: 0.08),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          fileColor(item.fileType),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 3,
+                            backgroundColor: colors.onSurface.withValues(alpha: 0.08),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              fileColor(item.fileType),
+                            ),
+                          ),
+                          Icon(
+                            Icons.hourglass_bottom_rounded,
+                            size: 16,
+                            color: fileColor(item.fileType),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: () => ref.read(downloadProvider.notifier).cancelDownload(item.id),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: errorColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        child: Icon(Icons.close_rounded, size: 18, color: errorColor),
                       ),
-                      Icon(
-                        Icons.hourglass_bottom_rounded,
-                        size: 16,
-                        color: fileColor(item.fileType),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -930,44 +955,6 @@ class _DownloadedFileTile extends ConsumerWidget {
     this.compact = false,
   });
 
-  void _showMenu(BuildContext context, WidgetRef ref) {
-    final t = AppLocalizations.of(context);
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(Icons.open_in_new_rounded, color: AppColors.greenAccent),
-                title: Text(t.translate('open_external')),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  if (item.localPath != null) {
-                    OpenFilex.open(item.localPath!);
-                  }
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.delete_rounded, color: errorColor),
-                title: Text(t.translate('delete')),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _confirmDelete(context, ref);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _confirmDelete(BuildContext context, WidgetRef ref) {
     final t = AppLocalizations.of(context);
     showDialog(
@@ -1091,22 +1078,49 @@ class _DownloadedFileTile extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (!compact)
-                GestureDetector(
-                  onTap: () => _showMenu(context, ref),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: colors.onSurface.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(Icons.more_vert_rounded, size: 18, color: colors.onSurface.withValues(alpha: 0.4)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _iconButton(
+                    bgColor: AppColors.greenAccent.withValues(alpha: 0.1),
+                    icon: Icons.open_in_new_rounded,
+                    iconColor: AppColors.greenAccent,
+                    onTap: () {
+                      if (item.localPath != null) OpenFilex.open(item.localPath!);
+                    },
                   ),
-                ),
+                  const SizedBox(width: 6),
+                  _iconButton(
+                    bgColor: errorColor.withValues(alpha: 0.1),
+                    icon: Icons.delete_outline_rounded,
+                    iconColor: errorColor,
+                    onTap: () => _confirmDelete(context, ref),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _iconButton({
+    required Color bgColor,
+    required IconData icon,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 16, color: iconColor),
       ),
     );
   }

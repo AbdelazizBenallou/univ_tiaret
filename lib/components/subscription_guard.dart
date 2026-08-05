@@ -13,8 +13,6 @@ class SubscriptionGuard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(subscriptionProvider);
-    final colors = Theme.of(context).colorScheme;
-    final t = AppLocalizations.of(context);
 
     if (!state.loadedOnce && !state.loading) {
       Future.microtask(() => ref.read(subscriptionProvider.notifier).loadAll());
@@ -25,6 +23,18 @@ class SubscriptionGuard extends ConsumerWidget {
     }
 
     if (state.current != null) return child;
+
+    return const NoSubscriptionView();
+  }
+}
+
+class NoSubscriptionView extends StatelessWidget {
+  const NoSubscriptionView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final t = AppLocalizations.of(context);
 
     return Center(
       child: Padding(

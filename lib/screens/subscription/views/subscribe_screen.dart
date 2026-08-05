@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:univ_tiaret/constants.dart';
+import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/auth_provider.dart';
 import 'package:univ_tiaret/logic/subscription_provider.dart';
@@ -44,9 +45,7 @@ class _SubscribeScreenState extends ConsumerState<SubscribeScreen> {
     final current = semesters.where((s) => s.isCurrent).firstOrNull;
 
     if (current == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.translate('no_current_semester'))),
-      );
+      showFloatingSnackBar(context, message: t.translate('no_current_semester'), type: SnackBarType.warning);
       return;
     }
     if (user?.specialityId == null) return;
@@ -57,9 +56,11 @@ class _SubscribeScreenState extends ConsumerState<SubscribeScreen> {
     );
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg ?? t.translate('demand_created'))),
-      );
+      if (msg != null) {
+        showFloatingSnackBar(context, message: msg, type: SnackBarType.error);
+      } else {
+        showFloatingSnackBar(context, message: t.translate('demand_created'), type: SnackBarType.success);
+      }
     }
   }
 
@@ -129,17 +130,13 @@ class _SemesterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.greenLight, AppColors.greenAccent],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.greenAccent.withValues(alpha: 0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -156,25 +153,14 @@ class _SemesterCard extends StatelessWidget {
                     children: [
                       Text(
                         semesterName ?? '-',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: colors.onSurface),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         levelName ?? '',
-                        style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.8)),
+                        style: TextStyle(fontSize: 13, color: colors.onSurface.withValues(alpha: 0.5)),
                       ),
                     ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'PREMIUM',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.8),
                   ),
                 ),
               ],
@@ -184,18 +170,12 @@ class _SemesterCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(width: 6),
-                    Text(
-                      specialityName!,
-                      style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.9)),
-                    ),
-                  ],
+                child: Text(
+                  specialityName!,
+                  style: TextStyle(fontSize: 13, color: colors.onSurface.withValues(alpha: 0.7)),
                 ),
               ),
             ],
