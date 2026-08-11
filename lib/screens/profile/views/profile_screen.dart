@@ -51,47 +51,52 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
-      body: state.loading
-          ? const Center(child: CircularProgressIndicator())
-          : state.error != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      LucideIcons.alertCircle,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.error,
+      body: profile == null
+          ? state.loading
+              ? const Center(child: CircularProgressIndicator())
+              : state.error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          LucideIcons.alertCircle,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          t.translate(state.error!),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: () =>
+                              ref.read(profileProvider.notifier).load(),
+                          icon: const Icon(LucideIcons.refreshCw, size: 18),
+                          label: Text(t.translate('try_again')),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      t.translate(state.error!),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      onPressed: () =>
-                          ref.read(profileProvider.notifier).load(),
-                      icon: const Icon(LucideIcons.refreshCw, size: 18),
-                      label: Text(t.translate('try_again')),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : profile == null
-          ? const Center(child: Text('No profile data'))
+                  ),
+                )
+              : const Center(child: Text('No profile data'))
           : ListView(
               padding: const EdgeInsets.only(bottom: 40),
               children: [
+                if (!state.loading && state.error != null) ...[
+                  const SizedBox(height: 12),
+                  _OfflineBanner(message: t.translate('offline_show_cached')),
+                  const SizedBox(height: 8),
+                ],
                 _ProfileHeader(
                   firstName: profile['first_name'] ?? '',
                   lastName: profile['last_name'] ?? '',
@@ -210,6 +215,48 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       color: isDark
           ? Colors.white.withValues(alpha: 0.06)
           : Colors.black.withValues(alpha: 0.06),
+    );
+  }
+}
+
+class _OfflineBanner extends StatelessWidget {
+  final String message;
+  const _OfflineBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.warning.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.cloud_off_rounded,
+            size: 18,
+            color: isDark ? AppColors.greenLight : AppColors.warning,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: colors.onSurface.withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

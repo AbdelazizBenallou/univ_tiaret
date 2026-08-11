@@ -37,7 +37,9 @@ A Flutter-based student application for **Universite de Tiaret** that enables st
 - **Local reminders** — Create, edit, and delete reminders stored in SQLite
 
 ### Profile & Subscription
-- **Profile management** — View and edit personal and academic information
+- **Profile management** — View and edit personal and academic information, with an offline cache that keeps showing saved data when the server is unreachable
+- **Social media links** — Add/edit social profiles from the edit profile screen
+- **About Us & team** — Team member list with full member detail pages (bio + social links)
 - **Subscription status** — View current subscription, demand history, and create new demands
 - **Password management** — Change password and forgot password flows
 
@@ -49,6 +51,12 @@ A Flutter-based student application for **Universite de Tiaret** that enables st
 ### Theme
 - Light and Dark mode with system preference option
 - Material 2 design with custom theming
+- Consistent icon colors that adapt in dark mode (Lucide icon set)
+
+### Settings
+- **About Us** — Team members list opening into full member detail pages
+- **Terms & Conditions** — Dedicated page (content-ready scaffold)
+- **Security** — Change password and subscription management
 
 ### Server Configuration
 - Runtime-configurable backend server IP/port
@@ -158,7 +166,7 @@ lib/
 ### Navigation Flow
 
 ```
-Splash Screen
+Splash Screen (animated app icon + branding)
     │
     ├─ [Authenticated] ──→ EntryPoint (5 tabs)
     │     ├── Home ──→ Seasons ──→ Semesters ──→ Modules ──→ Activities ──→ Lesson Files
@@ -167,7 +175,7 @@ Splash Screen
     │     ├── Favorites (filter by module/activity/season)
     │     ├── Downloads (active + completed)
     │     ├── Calendar (reminders)
-    │     └── Settings ──→ Profile / Change Password / Subscription
+    │     └── Settings ──→ Profile / Security / Subscription / About Us / Terms & Conditions
     │
     └─ [Unauthenticated] ──→ Login Screen
                                ├── Register (Personal Info → Account)
@@ -193,6 +201,7 @@ Splash Screen
 | Loading Effects | `shimmer` |
 | Device Info | `device_info_plus` + `crypto` (fingerprinting) |
 | Form Validation | `form_field_validator` |
+| Icons | `lucide_icons_flutter` (Lucide icon set) |
 | Notifications | `flutter_local_notifications` |
 | Calendar | `table_calendar` |
 | Fonts | Plus Jakarta, Cairo (Arabic), Grandis Extended |
