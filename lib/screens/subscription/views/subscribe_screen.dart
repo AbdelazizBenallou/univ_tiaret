@@ -4,6 +4,7 @@ import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/logic/auth_provider.dart';
+import 'package:univ_tiaret/logic/connectivity_provider.dart';
 import 'package:univ_tiaret/logic/subscription_provider.dart';
 import 'package:univ_tiaret/logic/semesters_provider.dart';
 
@@ -16,6 +17,7 @@ class SubscribeScreen extends ConsumerStatefulWidget {
 
 class _SubscribeScreenState extends ConsumerState<SubscribeScreen> {
   bool _initialLoadDone = false;
+  NetworkStatus _prevNetworkStatus = NetworkStatus.checking;
 
   @override
   void initState() {
@@ -48,11 +50,10 @@ class _SubscribeScreenState extends ConsumerState<SubscribeScreen> {
       showFloatingSnackBar(context, message: t.translate('no_current_semester'), type: SnackBarType.warning);
       return;
     }
-    if (user?.specialityId == null) return;
 
     final msg = await ref.read(subscriptionProvider.notifier).createDemand(
       semesterId: current.id,
-      specialityId: user!.specialityId!,
+      specialityId: user?.specialityId,
     );
 
     if (mounted) {
@@ -72,40 +73,66 @@ class _SubscribeScreenState extends ConsumerState<SubscribeScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = Theme.of(context).colorScheme;
 
+    final networkStatus = ref.watch(connectivityProvider);
+    if (_prevNetworkStatus == NetworkStatus.offline &&
+        networkStatus == NetworkStatus.online) {
+      _prevNetworkStatus = networkStatus;
+      Future.microtask(() => _load());
+    } else {
+      _prevNetworkStatus = networkStatus;
+    }
+
+    final showOffline = state.loadError &&
+        state.current == null &&
+        state.loadedOnce &&
+        _initialLoadDone;
+
     return Scaffold(
       appBar: AppBar(title: Text(t.translate('subscription'))),
       body: state.loading || !_initialLoadDone
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-              children: [
-                _SemesterCard(
-                  semesterName: _currentSemesterName,
-                  levelName: user?.levelName,
-                  specialityName: user?.specialityName,
-                  isDark: isDark,
-                  colors: colors,
-                ),
-                const SizedBox(height: 20),
-                _SubscriptionStatus(
-                  current: state.current,
-                  demands: state.demands,
-                  loading: state.saving,
-                  isDark: isDark,
-                  colors: colors,
-                  t: t,
-                  onRequestPremium: _requestPremium,
-                ),
-                if (state.demands.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  _DemandsList(
-                    demands: state.demands,
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+                children: [
+                  _SemesterCard(
+                    semesterName: _currentSemesterName,
+                    levelName: user?.levelName,
+                    specialityName: user?.specialityName,
                     isDark: isDark,
                     colors: colors,
-                    t: t,
                   ),
+                  const SizedBox(height: 20),
+                  if (showOffline)
+                    _OfflineCard(
+                      isDark: isDark,
+                      colors: colors,
+                      t: t,
+                      onRetry: _load,
+                    )
+                  else
+                    _SubscriptionStatus(
+                      current: state.current,
+                      demands: state.demands,
+                      loading: state.saving,
+                      isDark: isDark,
+                      colors: colors,
+                      t: t,
+                      onRequestPremium: _requestPremium,
+                    ),
+                  if (state.demands.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    _DemandsList(
+                      demands: state.demands,
+                      isDark: isDark,
+                      colors: colors,
+                      t: t,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
     );
   }
@@ -179,6 +206,65 @@ class _SemesterCard extends StatelessWidget {
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OfflineCard extends StatelessWidget {
+  final bool isDark;
+  final ColorScheme colors;
+  final AppLocalizations t;
+  final VoidCallback onRetry;
+
+  const _OfflineCard({
+    required this.isDark,
+    required this.colors,
+    required this.t,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const Icon(Icons.wifi_off_rounded, size: 32, color: AppColors.warning),
+            const SizedBox(height: 12),
+            Text(
+              t.translate('offline_title'),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.onSurface),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              t.translate('offline_message'),
+              style: TextStyle(fontSize: 13, color: colors.onSurface.withValues(alpha: 0.5)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onRetry,
+                child: Text(t.translate('retry')),
+              ),
+            ),
           ],
         ),
       ),

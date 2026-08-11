@@ -50,12 +50,15 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   String _activeFilterLabel(AppLocalizations t) {
     final f = ref.read(favoriteProvider);
     final parts = <String>[];
-    if (f.filterModule.isNotEmpty)
+    if (f.filterModule.isNotEmpty) {
       parts.add('${t.translate('module')}: ${f.filterModule}');
-    if (f.filterActivity.isNotEmpty)
+    }
+    if (f.filterActivity.isNotEmpty) {
       parts.add('${t.translate('activity_type')}: ${f.filterActivity}');
-    if (f.filterSeason.isNotEmpty)
+    }
+    if (f.filterSeason.isNotEmpty) {
       parts.add('${t.translate('season')}: ${f.filterSeason}');
+    }
     return parts.join('  ·  ');
   }
 

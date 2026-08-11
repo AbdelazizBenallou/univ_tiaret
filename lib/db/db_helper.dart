@@ -6,7 +6,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
 
   static Database? _database;
-  static const int _dbVersion = 6;
+  static const int _dbVersion = 8;
   static const String _dbName = 'univ_tiaret_cache.db';
 
   Future<Database> get database async {
@@ -145,6 +145,36 @@ class DatabaseHelper {
         updated_at TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE subscriptions (
+        id INTEGER PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        type TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT '',
+        semester_id INTEGER NOT NULL DEFAULT 0,
+        semester_name TEXT NOT NULL DEFAULT '',
+        semester_start_date TEXT,
+        semester_end_date TEXT,
+        speciality_id INTEGER,
+        speciality_name TEXT,
+        speciality_code TEXT,
+        start_date TEXT,
+        end_date TEXT,
+        remaining_days INTEGER,
+        cached_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE notification_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        reminder_id INTEGER,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL DEFAULT '',
+        fired_at TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -252,6 +282,38 @@ class DatabaseHelper {
         await db.execute('ALTER TABLE cached_lesson_files ADD COLUMN file_size INTEGER');
       } catch (_) {}
     }
+    if (oldVersion < 7) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS subscriptions (
+          id INTEGER PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          type TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT '',
+          semester_id INTEGER NOT NULL DEFAULT 0,
+          semester_name TEXT NOT NULL DEFAULT '',
+          semester_start_date TEXT,
+          semester_end_date TEXT,
+          speciality_id INTEGER,
+          speciality_name TEXT,
+          speciality_code TEXT,
+          start_date TEXT,
+          end_date TEXT,
+          remaining_days INTEGER,
+          cached_at TEXT NOT NULL
+        )
+      ''');
+    }
+    if (oldVersion < 8) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS notification_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          reminder_id INTEGER,
+          title TEXT NOT NULL,
+          body TEXT NOT NULL DEFAULT '',
+          fired_at TEXT NOT NULL
+        )
+      ''');
+    }
   }
 
   Future<void> clearAll() async {
@@ -264,5 +326,7 @@ class DatabaseHelper {
     await db.execute('DELETE FROM favorites');
     await db.execute('DELETE FROM reminders');
     await db.execute('DELETE FROM user_profile');
+    await db.execute('DELETE FROM subscriptions');
+    await db.execute('DELETE FROM notification_history');
   }
 }

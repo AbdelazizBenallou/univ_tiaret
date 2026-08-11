@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:univ_tiaret/components/breadcrumb_bar.dart';
 import 'package:univ_tiaret/components/modern_list_tile.dart';
 import 'package:univ_tiaret/components/skeleton_tile.dart';
@@ -84,7 +85,7 @@ class _SemestersScreenState extends ConsumerState<SemestersScreen> {
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            Icons.cloud_off_rounded,
+                            LucideIcons.cloudOff,
                             size: 36,
                             color: errorColor.withValues(alpha: 0.6),
                           ),
@@ -110,7 +111,7 @@ class _SemestersScreenState extends ConsumerState<SemestersScreen> {
                             onPressed: () => ref
                                 .read(semestersProvider.notifier)
                                 .fetchSemesters(levelId: widget.levelId),
-                            icon: Icon(Icons.refresh_rounded, size: 18),
+                            icon: Icon(LucideIcons.refreshCw, size: 18),
                             label: Text(t.translate('try_again')),
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -149,7 +150,7 @@ class _SemestersScreenState extends ConsumerState<SemestersScreen> {
                               ? '${semester.startDate!.day}/${semester.startDate!.month}/${semester.startDate!.year}'
                               : '';
                           return ModernListTile(
-                            icon: Icons.date_range_rounded,
+                            icon: LucideIcons.calendarDays,
                             title: semester.name,
                             subtitle: startDate,
                             badge: semester.isCurrent && widget.seasonIsCurrent

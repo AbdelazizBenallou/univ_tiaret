@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:univ_tiaret/components/server_config_dialog.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/logic/auth_provider.dart';
@@ -73,6 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final auth = ref.watch(authProvider);
     final size = MediaQuery.of(context).size;
     final t = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
@@ -89,7 +90,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 child: Center(
                   child: Icon(
-                    Icons.school_rounded,
+                    LucideIcons.graduationCap,
                     size: 40,
                     color: primaryColor,
                   ),
@@ -149,13 +150,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   margin: const EdgeInsets.all(10),
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: primaryColor.withValues(alpha: 0.1),
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.08)
+                                        : primaryColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(
-                                    Icons.email_rounded,
+                                    LucideIcons.mail,
                                     size: 20,
-                                    color: primaryColor,
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.55)
+                                        : primaryColor,
                                   ),
                                 ),
                               ),
@@ -178,13 +183,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   margin: const EdgeInsets.all(10),
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: primaryColor.withValues(alpha: 0.1),
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.08)
+                                        : primaryColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(
-                                    Icons.lock_rounded,
+                                    LucideIcons.lock,
                                     size: 20,
-                                    color: primaryColor,
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.55)
+                                        : primaryColor,
                                   ),
                                 ),
                                 suffixIcon: IconButton(
@@ -195,8 +204,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   },
                                   icon: Icon(
                                     _obscurePassword
-                                        ? Icons.visibility_off_rounded
-                                        : Icons.visibility_rounded,
+                                        ? LucideIcons.eyeOff
+                                        : LucideIcons.eye,
                                     color: Theme.of(context)
                                         .textTheme
                                         .bodyLarge!
@@ -212,23 +221,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          TextButton(
-                            onPressed: () {
-                              ServerConfigDialog.show(context);
-                            },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.dns_rounded,
-                                  size: 16,
-                                  color: primaryColor,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(t.translate('server_config')),
-                              ],
-                            ),
-                          ),
+                          const SizedBox.shrink(),
                           TextButton(
                             onPressed: () {
                               Navigator.pushNamed(

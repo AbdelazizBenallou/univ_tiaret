@@ -74,4 +74,33 @@ class UserModel {
       'avatar': avatar,
     };
   }
+
+  UserModel copyWith({
+    String? firstName,
+    String? lastName,
+    String? gender,
+    String? phone,
+    String? avatar,
+    int? levelId,
+    String? levelName,
+    int? specialityId,
+    String? specialityName,
+  }) {
+    return UserModel(
+      id: id,
+      email: email,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      gender: gender ?? this.gender,
+      status: status,
+      roles: roles,
+      levelId: levelId ?? this.levelId,
+      levelName: levelName ?? this.levelName,
+      specialityId: specialityId ?? this.specialityId,
+      specialityName: specialityName ?? this.specialityName,
+      studentId: studentId,
+      phone: phone ?? this.phone,
+      avatar: avatar ?? this.avatar,
+    );
+  }
 }

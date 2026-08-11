@@ -9,8 +9,6 @@ import 'package:univ_tiaret/route/route_constants.dart';
 import 'package:univ_tiaret/services/download_service.dart';
 import 'package:univ_tiaret/utils/file_utils.dart';
 
-enum _FilterMode { all, module, activityType, date, fileType }
-
 enum _DateFilter { all, today, thisWeek, thisMonth, older }
 
 class DownloadsScreen extends ConsumerStatefulWidget {
@@ -24,12 +22,16 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
   bool _showSearch = false;
   String _searchQuery = '';
   final _searchController = TextEditingController();
-  _FilterMode _filterMode = _FilterMode.all;
   _DateFilter _dateFilter = _DateFilter.all;
   String? _selectedModule;
   String? _selectedType;
   String? _selectedFileType;
-  bool _showFilters = false;
+
+  bool get _hasActiveFilter =>
+      _selectedModule != null ||
+      _selectedType != null ||
+      _selectedFileType != null ||
+      _dateFilter != _DateFilter.all;
 
   @override
   void initState() {
@@ -44,34 +46,37 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
   }
 
   List<DownloadItem> _filtered(List<DownloadItem> items) {
-    var result = items.where((i) => i.status == DownloadStatus.completed).toList();
+    var result = items
+        .where((i) => i.status == DownloadStatus.completed)
+        .toList();
 
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
-      result = result.where((i) =>
-        i.name.toLowerCase().contains(q) ||
-        i.moduleName.toLowerCase().contains(q) ||
-        i.activityName.toLowerCase().contains(q)
-      ).toList();
+      result = result
+          .where(
+            (i) =>
+                i.name.toLowerCase().contains(q) ||
+                i.moduleName.toLowerCase().contains(q) ||
+                i.activityName.toLowerCase().contains(q),
+          )
+          .toList();
     }
 
-    switch (_filterMode) {
-      case _FilterMode.module:
-        if (_selectedModule != null) {
-          result = result.where((i) => i.moduleName == _selectedModule).toList();
-        }
-      case _FilterMode.activityType:
-        if (_selectedType != null) {
-          result = result.where((i) => i.activityName == _selectedType).toList();
-        }
-      case _FilterMode.date:
-        result = _filterByDate(result);
-      case _FilterMode.fileType:
-        if (_selectedFileType != null) {
-          result = result.where((i) => i.fileType.toLowerCase() == _selectedFileType!.toLowerCase()).toList();
-        }
-      case _FilterMode.all:
-        break;
+    if (_selectedModule != null) {
+      result = result.where((i) => i.moduleName == _selectedModule).toList();
+    }
+    if (_selectedType != null) {
+      result = result.where((i) => i.activityName == _selectedType).toList();
+    }
+    if (_selectedFileType != null) {
+      result = result
+          .where(
+            (i) => i.fileType.toLowerCase() == _selectedFileType!.toLowerCase(),
+          )
+          .toList();
+    }
+    if (_dateFilter != _DateFilter.all) {
+      result = _filterByDate(result);
     }
 
     return result;
@@ -114,279 +119,39 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
     }
   }
 
-  List<String> _availableModules(List<DownloadItem> items) {
-    return items
-        .where((i) => i.status == DownloadStatus.completed && i.moduleName.isNotEmpty)
-        .map((i) => i.moduleName)
-        .toSet()
-        .toList()
-      ..sort();
-  }
-
-  List<String> _availableTypes(List<DownloadItem> items) {
-    return items
-        .where((i) => i.status == DownloadStatus.completed && i.activityName.isNotEmpty)
-        .map((i) => i.activityName)
-        .toSet()
-        .toList()
-      ..sort();
+  List<String> _uniqueValues(Iterable<String> values) {
+    return values.where((v) => v.isNotEmpty).toSet().toList()..sort();
   }
 
   void _showFilterSheet() {
-    final t = AppLocalizations.of(context);
+    final items = ref
+        .read(downloadProvider)
+        .items
+        .where((i) => i.status == DownloadStatus.completed)
+        .toList();
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  t.translate('filter'),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 16),
-                _filterChipRow(ctx, t, _FilterMode.all, Icons.all_inclusive_rounded, t.translate('all')),
-                const SizedBox(height: 8),
-                _filterChipRow(ctx, t, _FilterMode.module, Icons.book_rounded, t.translate('modules')),
-                const SizedBox(height: 8),
-                _filterChipRow(ctx, t, _FilterMode.activityType, Icons.grid_view_rounded, t.translate('activity_type')),
-                const SizedBox(height: 8),
-                _filterChipRow(ctx, t, _FilterMode.date, Icons.date_range_rounded, t.translate('date')),
-                const SizedBox(height: 8),
-                _filterChipRow(ctx, t, _FilterMode.fileType, Icons.insert_drive_file_rounded, t.translate('file_type')),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _filterChipRow(BuildContext ctx, AppLocalizations t, _FilterMode mode, IconData icon, String label) {
-    final isSelected = _filterMode == mode;
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(ctx);
-        setState(() {
-          _filterMode = mode;
-          _showFilters = mode != _FilterMode.all;
-          if (mode == _FilterMode.all) {
-            _selectedModule = null;
-            _selectedType = null;
-            _selectedFileType = null;
-            _dateFilter = _DateFilter.all;
-          }
-        });
-        if (mode != _FilterMode.all) {
-          _showSubFilterSheet();
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? primaryColor.withValues(alpha: 0.1)
-              : Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? primaryColor.withValues(alpha: 0.3)
-                : Theme.of(context).dividerTheme.color?.withValues(alpha: 0.3) ?? Colors.grey.withValues(alpha: 0.2),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: isSelected ? primaryColor : null),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? primaryColor : null,
-              ),
-            ),
-            const Spacer(),
-            if (isSelected)
-              Icon(Icons.check_rounded, size: 20, color: primaryColor),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showSubFilterSheet() {
-    final t = AppLocalizations.of(context);
-    final items = ref.read(downloadProvider).items;
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  _filterTitle(t),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 16),
-                ..._subFilterOptions(ctx, t, items),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  String _filterTitle(AppLocalizations t) {
-    switch (_filterMode) {
-      case _FilterMode.module: return t.translate('modules');
-      case _FilterMode.activityType: return t.translate('activity_type');
-      case _FilterMode.date: return t.translate('date');
-      case _FilterMode.fileType: return t.translate('file_type');
-      case _FilterMode.all: return '';
-    }
-  }
-
-  List<Widget> _subFilterOptions(BuildContext ctx, AppLocalizations t, List<DownloadItem> items) {
-    switch (_filterMode) {
-      case _FilterMode.module:
-        final modules = _availableModules(items);
-        return modules.map((m) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: _subFilterTile(ctx, m, m == _selectedModule, () {
-            setState(() { _selectedModule = m; });
-            Navigator.pop(ctx);
-          }),
-        )).toList();
-
-      case _FilterMode.activityType:
-        final types = _availableTypes(items);
-        return types.map((type) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: _subFilterTile(ctx, type, type == _selectedType, () {
-            setState(() { _selectedType = type; });
-            Navigator.pop(ctx);
-          }),
-        )).toList();
-
-      case _FilterMode.date:
-        return [
-          _subFilterTile(ctx, t.translate('all'), _dateFilter == _DateFilter.all, () { setState(() { _dateFilter = _DateFilter.all; }); Navigator.pop(ctx); }),
-          const SizedBox(height: 8),
-          _subFilterTile(ctx, t.translate('today'), _dateFilter == _DateFilter.today, () { setState(() { _dateFilter = _DateFilter.today; }); Navigator.pop(ctx); }),
-          const SizedBox(height: 8),
-          _subFilterTile(ctx, t.translate('this_week'), _dateFilter == _DateFilter.thisWeek, () { setState(() { _dateFilter = _DateFilter.thisWeek; }); Navigator.pop(ctx); }),
-          const SizedBox(height: 8),
-          _subFilterTile(ctx, t.translate('this_month'), _dateFilter == _DateFilter.thisMonth, () { setState(() { _dateFilter = _DateFilter.thisMonth; }); Navigator.pop(ctx); }),
-          const SizedBox(height: 8),
-          _subFilterTile(ctx, t.translate('older'), _dateFilter == _DateFilter.older, () { setState(() { _dateFilter = _DateFilter.older; }); Navigator.pop(ctx); }),
-        ];
-
-      case _FilterMode.fileType:
-        const types = ['pdf', 'docx', 'pptx', 'xlsx', 'jpg', 'png'];
-        return types.map((type) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: fileColor(type).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(fileIcon(type), size: 16, color: fileColor(type)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _subFilterTile(ctx, type.toUpperCase(), type == _selectedFileType, () {
-                  setState(() { _selectedFileType = type; });
-                  Navigator.pop(ctx);
-                }),
-              ),
-            ],
-          ),
-        )).toList();
-
-      case _FilterMode.all:
-        return [];
-    }
-  }
-
-  Widget _subFilterTile(BuildContext ctx, String label, bool selected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: selected
-              ? primaryColor.withValues(alpha: 0.1)
-              : Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected
-                ? primaryColor.withValues(alpha: 0.3)
-                : Theme.of(context).dividerTheme.color?.withValues(alpha: 0.3) ?? Colors.grey.withValues(alpha: 0.2),
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                  color: selected ? primaryColor : null,
-                ),
-              ),
-            ),
-            if (selected)
-              Icon(Icons.check_rounded, size: 20, color: primaryColor),
-          ],
-        ),
+      builder: (ctx) => _FilterSheet(
+        moduleOptions: _uniqueValues(items.map((i) => i.moduleName)),
+        activityOptions: _uniqueValues(items.map((i) => i.activityName)),
+        fileTypeOptions: const ['pdf', 'docx', 'pptx', 'xlsx', 'jpg', 'png'],
+        initialModule: _selectedModule ?? '',
+        initialActivity: _selectedType ?? '',
+        initialFileType: _selectedFileType ?? '',
+        initialDate: _dateFilter,
+        onApply: (module, activity, fileType, date) {
+          setState(() {
+            _selectedModule = module.isEmpty ? null : module;
+            _selectedType = activity.isEmpty ? null : activity;
+            _selectedFileType = fileType.isEmpty ? null : fileType;
+            _dateFilter = date;
+          });
+        },
       ),
     );
   }
@@ -399,9 +164,11 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final activeItems = dlState.items
-        .where((i) =>
-            i.status == DownloadStatus.downloading ||
-            i.status == DownloadStatus.queued)
+        .where(
+          (i) =>
+              i.status == DownloadStatus.downloading ||
+              i.status == DownloadStatus.queued,
+        )
         .toList();
 
     final allCompleted = dlState.items
@@ -415,216 +182,280 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
     final hasItems = activeItems.isNotEmpty || filteredCompleted.isNotEmpty;
 
     Map<String, List<DownloadItem>> grouped = {};
-    if (_filterMode == _FilterMode.module && _selectedModule == null) {
+    if (_selectedModule == null) {
       for (final item in filteredCompleted) {
-        final key = item.moduleName.isNotEmpty ? item.moduleName : t.translate('other');
+        final key = item.moduleName.isNotEmpty
+            ? item.moduleName
+            : t.translate('other');
         grouped.putIfAbsent(key, () => []).add(item);
       }
     }
 
     return SubscriptionGuard(
       child: Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      width: double.infinity,
-      height: double.infinity,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        t.translate('downloads'),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: colors.onSurface,
-                        ),
-                      ),
-                      if (totalCount > 0)
+        color: Theme.of(context).scaffoldBackgroundColor,
+        width: double.infinity,
+        height: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          '$totalCount ${t.translate('files')}${activeCount > 0 ? '  ·  $activeCount ${t.translate('in_progress')}' : ''}',
+                          t.translate('downloads'),
                           style: TextStyle(
-                            fontSize: 12,
-                            color: colors.onSurface.withValues(alpha: 0.5),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: colors.onSurface,
                           ),
                         ),
-                    ],
-                  ),
-                ),
-                if (hasItems) ...[
-                  IconButton(
-                    onPressed: () {
-                      setState(() {
-                        _showFilters = !_showFilters;
-                        _showSearch = false;
-                      });
-                      if (_showFilters) _showFilterSheet();
-                    },
-                    icon: Icon(
-                      Icons.filter_list_rounded,
-                      size: 22,
-                      color: _filterMode != _FilterMode.all ? primaryColor : null,
+                        if (totalCount > 0)
+                          Text(
+                            '$totalCount ${t.translate('files')}${activeCount > 0 ? '  ·  $activeCount ${t.translate('in_progress')}' : ''}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.onSurface.withValues(alpha: 0.5),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      setState(() {
-                        _showSearch = !_showSearch;
-                        if (!_showSearch) {
-                          _searchController.clear();
-                          _searchQuery = '';
-                        }
-                      });
-                    },
-                    icon: Icon(
-                      _showSearch ? Icons.close_rounded : Icons.search_rounded,
-                      size: 22,
+                  if (hasItems) ...[
+                    IconButton(
+                      onPressed: _showFilterSheet,
+                      icon: Icon(
+                        Icons.filter_list_rounded,
+                        size: 22,
+                        color: _hasActiveFilter ? primaryColor : null,
+                      ),
                     ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (_showSearch)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: TextField(
-                controller: _searchController,
-                autofocus: true,
-                onChanged: (v) => setState(() => _searchQuery = v),
-                decoration: InputDecoration(
-                  hintText: t.translate('search_downloads'),
-                  prefixIcon: Icon(Icons.search_rounded, size: 22),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          onPressed: () {
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _showSearch = !_showSearch;
+                          if (!_showSearch) {
                             _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                          icon: Icon(Icons.close_rounded, size: 20),
-                        )
-                      : null,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
+                            _searchQuery = '';
+                          }
+                        });
+                      },
+                      icon: Icon(
+                        _showSearch
+                            ? Icons.close_rounded
+                            : Icons.search_rounded,
+                        size: 22,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-          if (_filterMode != _FilterMode.all && _showFilters)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.filter_list_rounded, size: 14, color: primaryColor),
-                    const SizedBox(width: 6),
-                    Text(
-                      _activeFilterLabel(t),
-                      style: TextStyle(fontSize: 12, color: primaryColor, fontWeight: FontWeight.w500),
+            if (_showSearch)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  decoration: InputDecoration(
+                    hintText: t.translate('search_downloads'),
+                    prefixIcon: Icon(Icons.search_rounded, size: 22),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                            icon: Icon(Icons.close_rounded, size: 20),
+                          )
+                        : null,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                    const SizedBox(width: 6),
-                    GestureDetector(
+                  ),
+                ),
+              ),
+            if (_hasActiveFilter)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Row(
+                  children: [
+                    InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: _showFilterSheet,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.filter_list_rounded,
+                              size: 14,
+                              color: primaryColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _activeFilterLabel(t),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: primaryColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(8),
                       onTap: () {
                         setState(() {
-                          _filterMode = _FilterMode.all;
-                          _showFilters = false;
                           _selectedModule = null;
                           _selectedType = null;
                           _selectedFileType = null;
                           _dateFilter = _DateFilter.all;
                         });
                       },
-                      child: Icon(Icons.close_rounded, size: 14, color: primaryColor),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        child: Text(
+                          t.translate('reset_filters'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colors.onSurface.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
-          Expanded(
-            child: hasItems
-                ? RefreshIndicator(
-                    onRefresh: () async {
-                      ref.read(downloadProvider.notifier).init();
-                    },
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-                      children: [
-                        if (activeItems.isNotEmpty) ...[
-                          _sectionHeader(t.translate('in_progress'), '$activeCount ${t.translate('files')}', colors),
-                          const SizedBox(height: 8),
-                          ...activeItems.map((item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: _ActiveDownloadTile(item: item, colors: colors, isDark: isDark),
-                          )),
-                          const SizedBox(height: 12),
-                        ],
-                        if (filteredCompleted.isNotEmpty) ...[
-                          _sectionHeader(t.translate('completed'), '${filteredCompleted.length} ${t.translate('files')}', colors),
-                          const SizedBox(height: 8),
-                          if (_filterMode == _FilterMode.module && _selectedModule == null)
-                            ...grouped.entries.map((entry) => _ModuleGroup(
-                              moduleName: entry.key,
-                              files: entry.value,
-                              isDark: isDark,
-                              colors: colors,
-                            ))
-                          else
-                            ...filteredCompleted.map((item) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _DownloadedFileTile(
-                                item: item,
-                                isDark: isDark,
-                                colors: colors,
-                                onTap: item.localPath != null
-                                    ? () => Navigator.pushNamed(context, fileViewerScreenRoute, arguments: {
-                                          'filePath': item.localPath,
-                                          'fileName': item.name,
-                                          'fileType': item.fileType,
-                                        })
-                                    : null,
+            Expanded(
+              child: hasItems
+                  ? RefreshIndicator(
+                      onRefresh: () async {
+                        ref.read(downloadProvider.notifier).init();
+                      },
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+                        children: [
+                          if (activeItems.isNotEmpty) ...[
+                            _sectionHeader(
+                              t.translate('in_progress'),
+                              '$activeCount ${t.translate('files')}',
+                              colors,
+                            ),
+                            const SizedBox(height: 8),
+                            ...activeItems.map(
+                              (item) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: _ActiveDownloadTile(
+                                  item: item,
+                                  colors: colors,
+                                  isDark: isDark,
+                                ),
                               ),
-                            )),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          if (filteredCompleted.isNotEmpty) ...[
+                            _sectionHeader(
+                              t.translate('completed'),
+                              '${filteredCompleted.length} ${t.translate('files')}',
+                              colors,
+                            ),
+                            const SizedBox(height: 8),
+                            if (_selectedModule == null)
+                              ...grouped.entries.map(
+                                (entry) => _ModuleGroup(
+                                  moduleName: entry.key,
+                                  files: entry.value,
+                                  isDark: isDark,
+                                  colors: colors,
+                                ),
+                              )
+                            else
+                              ...filteredCompleted.map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: _DownloadedFileTile(
+                                    item: item,
+                                    isDark: isDark,
+                                    colors: colors,
+                                    onTap: item.localPath != null
+                                        ? () => Navigator.pushNamed(
+                                            context,
+                                            fileViewerScreenRoute,
+                                            arguments: {
+                                              'filePath': item.localPath,
+                                              'fileName': item.name,
+                                              'fileType': item.fileType,
+                                            },
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ],
-                      ],
-                    ),
-                  )
-                : _buildEmpty(t, colors),
-          ),
-        ],
-      ),
+                      ),
+                    )
+                  : _buildEmpty(t, colors),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   String _activeFilterLabel(AppLocalizations t) {
-    switch (_filterMode) {
-      case _FilterMode.module:
-        return '${t.translate('module')}: ${_selectedModule ?? t.translate('all')}';
-      case _FilterMode.activityType:
-        return '${t.translate('activity_type')}: ${_selectedType ?? t.translate('all')}';
-      case _FilterMode.date:
-        switch (_dateFilter) {
-          case _DateFilter.all: return t.translate('all');
-          case _DateFilter.today: return t.translate('today');
-          case _DateFilter.thisWeek: return t.translate('this_week');
-          case _DateFilter.thisMonth: return t.translate('this_month');
-          case _DateFilter.older: return t.translate('older');
-        }
-      case _FilterMode.fileType:
-        return '${t.translate('file_type')}: ${_selectedFileType?.toUpperCase() ?? t.translate('all')}';
-      case _FilterMode.all:
-        return '';
+    final parts = <String>[];
+    if (_selectedModule != null) {
+      parts.add('${t.translate('module')}: $_selectedModule');
     }
+    if (_selectedType != null) {
+      parts.add('${t.translate('activity_type')}: $_selectedType');
+    }
+    if (_selectedFileType != null) {
+      parts.add(
+        '${t.translate('file_type')}: ${_selectedFileType!.toUpperCase()}',
+      );
+    }
+    switch (_dateFilter) {
+      case _DateFilter.all:
+        break;
+      case _DateFilter.today:
+        parts.add(t.translate('today'));
+        break;
+      case _DateFilter.thisWeek:
+        parts.add(t.translate('this_week'));
+        break;
+      case _DateFilter.thisMonth:
+        parts.add(t.translate('this_month'));
+        break;
+      case _DateFilter.older:
+        parts.add(t.translate('older'));
+        break;
+    }
+    return parts.join(' · ');
   }
 
   Widget _sectionHeader(String title, String subtitle, ColorScheme colors) {
@@ -709,27 +540,31 @@ class _ActiveDownloadTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final progress = ref.watch(downloadProvider.select((p) {
-      final it = p.items.firstWhere(
-        (i) => i.id == item.id,
-        orElse: () => item,
-      );
-      return it.progress;
-    }));
+    final progress = ref.watch(
+      downloadProvider.select((p) {
+        final it = p.items.firstWhere(
+          (i) => i.id == item.id,
+          orElse: () => item,
+        );
+        return it.progress;
+      }),
+    );
 
-    final speed = ref.watch(downloadProvider.select((p) {
-      final it = p.items.firstWhere(
-        (i) => i.id == item.id,
-        orElse: () => item,
-      );
-      return it.speed;
-    }));
+    final speed = ref.watch(
+      downloadProvider.select((p) {
+        final it = p.items.firstWhere(
+          (i) => i.id == item.id,
+          orElse: () => item,
+        );
+        return it.speed;
+      }),
+    );
 
     final speedText = speed < 1024
         ? '${speed.toStringAsFixed(0)} B/s'
         : speed < 1048576
-            ? '${(speed / 1024).toStringAsFixed(1)} KB/s'
-            : '${(speed / 1048576).toStringAsFixed(1)} MB/s';
+        ? '${(speed / 1024).toStringAsFixed(1)} KB/s'
+        : '${(speed / 1048576).toStringAsFixed(1)} MB/s';
 
     final progressPercent = (progress * 100).toInt();
 
@@ -757,7 +592,7 @@ class _ActiveDownloadTile extends ConsumerWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     fileIcon(item.fileType),
@@ -803,7 +638,9 @@ class _ActiveDownloadTile extends ConsumerWidget {
                           CircularProgressIndicator(
                             value: progress,
                             strokeWidth: 3,
-                            backgroundColor: colors.onSurface.withValues(alpha: 0.08),
+                            backgroundColor: colors.onSurface.withValues(
+                              alpha: 0.08,
+                            ),
                             valueColor: AlwaysStoppedAnimation<Color>(
                               fileColor(item.fileType),
                             ),
@@ -818,7 +655,9 @@ class _ActiveDownloadTile extends ConsumerWidget {
                     ),
                     const SizedBox(width: 6),
                     GestureDetector(
-                      onTap: () => ref.read(downloadProvider.notifier).cancelDownload(item.id),
+                      onTap: () => ref
+                          .read(downloadProvider.notifier)
+                          .cancelDownload(item.id),
                       child: Container(
                         width: 36,
                         height: 36,
@@ -826,7 +665,11 @@ class _ActiveDownloadTile extends ConsumerWidget {
                           color: errorColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(Icons.close_rounded, size: 18, color: errorColor),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: errorColor,
+                        ),
                       ),
                     ),
                   ],
@@ -918,22 +761,28 @@ class _ModuleGroup extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-            ...files.map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: _DownloadedFileTile(
-              item: item,
-              isDark: isDark,
-              colors: colors,
-              compact: true,
-              onTap: item.localPath != null
-                  ? () => Navigator.pushNamed(context, fileViewerScreenRoute, arguments: {
-                        'filePath': item.localPath,
-                        'fileName': item.name,
-                        'fileType': item.fileType,
-                      })
-                  : null,
+          ...files.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: _DownloadedFileTile(
+                item: item,
+                isDark: isDark,
+                colors: colors,
+                compact: true,
+                onTap: item.localPath != null
+                    ? () => Navigator.pushNamed(
+                        context,
+                        fileViewerScreenRoute,
+                        arguments: {
+                          'filePath': item.localPath,
+                          'fileName': item.name,
+                          'fileType': item.fileType,
+                        },
+                      )
+                    : null,
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );
@@ -962,7 +811,9 @@ class _DownloadedFileTile extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(t.translate('delete_file')),
-        content: Text(t.translate('delete_file_confirm').replaceAll('{name}', item.name)),
+        content: Text(
+          t.translate('delete_file_confirm').replaceAll('{name}', item.name),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -973,7 +824,10 @@ class _DownloadedFileTile extends ConsumerWidget {
               Navigator.pop(ctx);
               ref.read(downloadProvider.notifier).deleteDownload(item.id);
             },
-            child: Text(t.translate('delete'), style: TextStyle(color: errorColor)),
+            child: Text(
+              t.translate('delete'),
+              style: TextStyle(color: errorColor),
+            ),
           ),
         ],
       ),
@@ -983,23 +837,23 @@ class _DownloadedFileTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Material(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : const Color(0xFFF5F5F5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.05)
+          : const Color(0xFFF5F5F5),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: compact ? 6 : 10,
+            vertical: compact ? 6 : 12,
           ),
           child: Row(
             children: [
               Container(
-                width: compact ? 36 : 40,
-                height: compact ? 36 : 40,
+                width: compact ? 36 : 42,
+                height: compact ? 36 : 42,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -1009,7 +863,7 @@ class _DownloadedFileTile extends ConsumerWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(compact ? 10 : 12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   fileIcon(item.fileType),
@@ -1017,7 +871,7 @@ class _DownloadedFileTile extends ConsumerWidget {
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1032,44 +886,50 @@ class _DownloadedFileTile extends ConsumerWidget {
                         color: colors.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: fileColor(item.fileType).withValues(alpha: 0.1),
+                            color: fileColor(
+                              item.fileType,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             item.fileType.toUpperCase(),
                             style: TextStyle(
-                              fontSize: 9,
+                              fontSize: compact ? 9 : 10,
                               fontWeight: FontWeight.w700,
                               color: fileColor(item.fileType),
                             ),
                           ),
                         ),
                         const SizedBox(width: 6),
-                        if (item.completedAt != null)
-                          Text(
-                            _formatDateShort(item.completedAt!),
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: colors.onSurface.withValues(alpha: 0.35),
-                            ),
-                          ),
                         if (item.moduleName.isNotEmpty) ...[
-                          const SizedBox(width: 6),
                           Flexible(
                             child: Text(
                               item.moduleName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 10,
-                                color: colors.onSurface.withValues(alpha: 0.35),
+                                fontSize: compact ? 10 : 11,
+                                color: colors.onSurface.withValues(alpha: 0.45),
                               ),
+                            ),
+                          ),
+                        ],
+                        if (item.completedAt != null) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            _formatDateShort(item.completedAt!),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: colors.onSurface.withValues(alpha: 0.35),
                             ),
                           ),
                         ],
@@ -1086,7 +946,9 @@ class _DownloadedFileTile extends ConsumerWidget {
                     icon: Icons.open_in_new_rounded,
                     iconColor: AppColors.greenAccent,
                     onTap: () {
-                      if (item.localPath != null) OpenFilex.open(item.localPath!);
+                      if (item.localPath != null) {
+                        OpenFilex.open(item.localPath!);
+                      }
                     },
                   ),
                   const SizedBox(width: 6),
@@ -1114,18 +976,239 @@ class _DownloadedFileTile extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 32,
-        height: 32,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, size: 16, color: iconColor),
+        child: Icon(icon, size: 18, color: iconColor),
       ),
     );
   }
 
   String _formatDateShort(DateTime dt) {
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+  }
+}
+
+class _FilterSheet extends StatefulWidget {
+  final List<String> moduleOptions;
+  final List<String> activityOptions;
+  final List<String> fileTypeOptions;
+  final String initialModule;
+  final String initialActivity;
+  final String initialFileType;
+  final _DateFilter initialDate;
+  final void Function(
+    String module,
+    String activity,
+    String fileType,
+    _DateFilter date,
+  )
+  onApply;
+
+  const _FilterSheet({
+    required this.moduleOptions,
+    required this.activityOptions,
+    required this.fileTypeOptions,
+    required this.initialModule,
+    required this.initialActivity,
+    required this.initialFileType,
+    required this.initialDate,
+    required this.onApply,
+  });
+
+  @override
+  State<_FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends State<_FilterSheet> {
+  late String _module;
+  late String _activity;
+  late String _fileType;
+  late String _date;
+
+  @override
+  void initState() {
+    super.initState();
+    _module = widget.initialModule;
+    _activity = widget.initialActivity;
+    _fileType = widget.initialFileType;
+    _date = _dateKey(widget.initialDate);
+  }
+
+  String _dateKey(_DateFilter filter) {
+    switch (filter) {
+      case _DateFilter.all:
+        return '';
+      case _DateFilter.today:
+        return 'today';
+      case _DateFilter.thisWeek:
+        return 'week';
+      case _DateFilter.thisMonth:
+        return 'month';
+      case _DateFilter.older:
+        return 'older';
+    }
+  }
+
+  _DateFilter _dateValue(String key) {
+    switch (key) {
+      case 'today':
+        return _DateFilter.today;
+      case 'week':
+        return _DateFilter.thisWeek;
+      case 'month':
+        return _DateFilter.thisMonth;
+      case 'older':
+        return _DateFilter.older;
+      default:
+        return _DateFilter.all;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    t.translate('filter'),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(Icons.close_rounded, size: 22),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildDropdown(
+              label: t.translate('module'),
+              value: _module,
+              options: widget.moduleOptions,
+              allLabel: t.translate('all'),
+              onChanged: (v) => setState(() => _module = v),
+            ),
+            _buildDropdown(
+              label: t.translate('activity_type'),
+              value: _activity,
+              options: widget.activityOptions,
+              allLabel: t.translate('all'),
+              onChanged: (v) => setState(() => _activity = v),
+            ),
+            _buildDropdown(
+              label: t.translate('file_type'),
+              value: _fileType,
+              options: widget.fileTypeOptions,
+              allLabel: t.translate('all'),
+              onChanged: (v) => setState(() => _fileType = v),
+            ),
+            _buildDropdown(
+              label: t.translate('date'),
+              value: _date,
+              options: const ['today', 'week', 'month', 'older'],
+              allLabel: t.translate('all'),
+              optionLabel: (v) {
+                switch (v) {
+                  case 'today':
+                    return t.translate('today');
+                  case 'week':
+                    return t.translate('this_week');
+                  case 'month':
+                    return t.translate('this_month');
+                  default:
+                    return t.translate('older');
+                }
+              },
+              onChanged: (v) => setState(() => _date = v),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      widget.onApply('', '', '', _DateFilter.all);
+                      Navigator.pop(context);
+                    },
+                    child: Text(t.translate('reset_filters')),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.greenAccent,
+                    ),
+                    onPressed: () {
+                      widget.onApply(
+                        _module,
+                        _activity,
+                        _fileType,
+                        _dateValue(_date),
+                      );
+                      Navigator.pop(context);
+                    },
+                    child: Text(t.translate('apply')),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required String value,
+    required List<String> options,
+    required String allLabel,
+    required ValueChanged<String> onChanged,
+    String Function(String)? optionLabel,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<String>(
+        initialValue: value.isEmpty ? '' : value,
+        isExpanded: true,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ),
+        ),
+        items: [
+          DropdownMenuItem(value: '', child: Text(allLabel)),
+          ...options.map(
+            (o) => DropdownMenuItem(
+              value: o,
+              child: Text(
+                optionLabel?.call(o) ?? o,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+        onChanged: (v) => onChanged(v ?? ''),
+      ),
+    );
   }
 }

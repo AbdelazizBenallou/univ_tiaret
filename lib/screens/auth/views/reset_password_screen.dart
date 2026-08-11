@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
@@ -104,7 +105,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                         padding: const EdgeInsets.symmetric(
                             vertical: 2),
                         child: Icon(
-                          Icons.lock_rounded,
+                          LucideIcons.lock,
                           size: 22,
                           color: Theme.of(context)
                               .textTheme
@@ -121,8 +122,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                         },
                         icon: Icon(
                           _obscurePassword
-                              ? Icons.visibility_off_rounded
-                              : Icons.visibility_rounded,
+                              ? LucideIcons.eyeOff
+                              : LucideIcons.eye,
                           color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.4),
                         ),
                       ),
@@ -147,7 +148,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                         padding: const EdgeInsets.symmetric(
                             vertical: 2),
                         child: Icon(
-                          Icons.lock_rounded,
+                          LucideIcons.lock,
                           size: 24,
                           color: Theme.of(context)
                               .textTheme
@@ -165,8 +166,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                         },
                         icon: Icon(
                           _obscureConfirmPassword
-                              ? Icons.visibility_off_rounded
-                              : Icons.visibility_rounded,
+                              ? LucideIcons.eyeOff
+                              : LucideIcons.eye,
                           color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.4),
                         ),
                       ),

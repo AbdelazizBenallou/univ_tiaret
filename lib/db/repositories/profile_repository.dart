@@ -11,6 +11,11 @@ class ProfileRepository {
     if (profile['roles'] is List) {
       profile['roles'] = jsonEncode(profile['roles']);
     }
+    if (profile['social_media_links'] is List ||
+        profile['social_media_links'] is Map) {
+      profile['social_media_links'] =
+          jsonEncode(profile['social_media_links']);
+    }
     await db.insert(
       'user_profile',
       profile,
@@ -25,6 +30,9 @@ class ProfileRepository {
     final row = Map<String, dynamic>.from(rows.first);
     if (row['roles'] is String) {
       row['roles'] = jsonDecode(row['roles'] as String);
+    }
+    if (row['social_media_links'] is String) {
+      row['social_media_links'] = jsonDecode(row['social_media_links'] as String);
     }
     return row;
   }

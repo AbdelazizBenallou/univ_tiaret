@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:univ_tiaret/components/breadcrumb_bar.dart';
 import 'package:univ_tiaret/components/skeleton_tile.dart';
 import 'package:univ_tiaret/constants.dart';
@@ -97,8 +98,8 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
         setState(() => _sortAscending = !_sortAscending);
       },
       options: [
-        SortOption(value: ModuleSortOption.name, label: t.translate('sort_name'), icon: Icons.sort_by_alpha_rounded),
-        SortOption(value: ModuleSortOption.coefficient, label: t.translate('sort_coeff'), icon: Icons.tag_rounded),
+        SortOption(value: ModuleSortOption.name, label: t.translate('sort_name'), icon: LucideIcons.arrowDownAZ),
+        SortOption(value: ModuleSortOption.coefficient, label: t.translate('sort_coeff'), icon: LucideIcons.tag),
       ],
     );
     if (result != null && mounted) {
@@ -131,7 +132,7 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
               });
             },
             icon: Icon(
-              _showSearch ? Icons.close_rounded : Icons.search_rounded,
+              _showSearch ? LucideIcons.x : LucideIcons.search,
               size: 24,
             ),
           ),
@@ -145,14 +146,14 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
             },
             icon: Icon(
               _viewMode == ViewMode.list
-                  ? Icons.grid_view_rounded
-                  : Icons.menu_rounded,
+                  ? LucideIcons.layoutGrid
+                  : LucideIcons.menu,
               size: 24,
             ),
           ),
           IconButton(
             onPressed: _showSortMenu,
-            icon: Icon(Icons.filter_list_rounded, size: 24),
+            icon: Icon(LucideIcons.listFilter, size: 24),
           ),
         ],
       ),
@@ -184,14 +185,14 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
                 onChanged: (v) => setState(() => _searchQuery = v),
                 decoration: InputDecoration(
                   hintText: t.translate('search_modules'),
-                  prefixIcon: Icon(Icons.search_rounded, size: 22),
+                  prefixIcon: Icon(LucideIcons.search, size: 22),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _searchQuery = '');
                           },
-                          icon: Icon(Icons.close_rounded, size: 20),
+                          icon: Icon(LucideIcons.x, size: 20),
                         )
                       : null,
                   contentPadding:
@@ -250,7 +251,7 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.cloud_off_rounded,
+                LucideIcons.cloudOff,
                 size: 36,
                 color: errorColor.withValues(alpha: 0.6),
               ),
@@ -278,7 +279,7 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
                       levelName: widget.levelName,
                       specialityId: widget.specialityId,
                     ),
-                icon: Icon(Icons.refresh_rounded, size: 18),
+                icon: Icon(LucideIcons.refreshCw, size: 18),
                 label: Text(t.translate('try_again')),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -377,7 +378,7 @@ class _ModuleListTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
                 child: Icon(
-                  Icons.book_rounded,
+                  LucideIcons.book,
                   size: 20,
                   color: Colors.white,
                 ),
@@ -481,7 +482,7 @@ class _ModuleGridCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  Icons.book_rounded,
+                  LucideIcons.book,
                   size: 16,
                   color: Colors.white,
                 ),

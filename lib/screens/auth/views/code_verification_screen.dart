@@ -2,9 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:univ_tiaret/components/floating_snackbar.dart';
-import 'package:univ_tiaret/components/server_config_dialog.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/logic/verification_provider.dart';
 import 'package:univ_tiaret/logic/password_provider.dart';
@@ -276,18 +276,12 @@ class _CodeVerificationScreenState
             }
           },
           icon: Icon(
-            Icons.arrow_back_rounded,
+            LucideIcons.arrowLeft,
             size: 24,
             color: Theme.of(context).textTheme.bodyLarge!.color,
           ),
         ),
         title: Text(t.translate('verification')),
-        actions: [
-          IconButton(
-            onPressed: () => ServerConfigDialog.show(context),
-            icon: Icon(Icons.settings_rounded, size: 24),
-          ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(defaultPadding),
@@ -350,7 +344,7 @@ class _CodeVerificationScreenState
                                       shape: BoxShape.circle,
                                     ),
                                         child: Icon(
-                                          Icons.check_circle_rounded,
+                                          LucideIcons.checkCircle,
                                           color: Colors.white,
                                           size: 28,
                                         ),
@@ -385,7 +379,7 @@ class _CodeVerificationScreenState
                                           shape: BoxShape.circle,
                                         ),
                                         child: Icon(
-                                          Icons.close_rounded,
+                                          LucideIcons.x,
                                           color: Colors.white,
                                           size: 28,
                                         ),

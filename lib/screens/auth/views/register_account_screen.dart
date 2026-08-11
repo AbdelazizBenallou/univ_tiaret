@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/logic/auth_provider.dart';
@@ -161,7 +162,7 @@ class _RegisterAccountScreenState extends ConsumerState<RegisterAccountScreen> {
                           padding: const EdgeInsets.symmetric(
                               vertical: 2),
                           child: Icon(
-                            Icons.email_rounded,
+                            LucideIcons.mail,
                             size: 22,
                             color: Theme.of(context)
                                 .textTheme
@@ -189,7 +190,7 @@ class _RegisterAccountScreenState extends ConsumerState<RegisterAccountScreen> {
                         prefixIcon: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2),
                           child: Icon(
-                            Icons.lock_rounded,
+                            LucideIcons.lock,
                             size: 22,
                             color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.3),
                           ),
@@ -199,7 +200,7 @@ class _RegisterAccountScreenState extends ConsumerState<RegisterAccountScreen> {
                           children: [
                             if (_passwordTouched)
                               Icon(
-                                _passwordValid ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                                _passwordValid ? LucideIcons.checkCircle : LucideIcons.xCircle,
                                 size: 20,
                                 color: _passwordValid ? Colors.green : errorColor,
                               ),
@@ -211,7 +212,7 @@ class _RegisterAccountScreenState extends ConsumerState<RegisterAccountScreen> {
                                 });
                               },
                               icon: Icon(
-                                _obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                                _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
                                 color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.4),
                               ),
                             ),
@@ -266,7 +267,7 @@ class _RegisterAccountScreenState extends ConsumerState<RegisterAccountScreen> {
                         prefixIcon: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2),
                           child: Icon(
-                            Icons.lock_rounded,
+                            LucideIcons.lock,
                             size: 22,
                             color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.3),
                           ),
@@ -277,8 +278,8 @@ class _RegisterAccountScreenState extends ConsumerState<RegisterAccountScreen> {
                             if (_confirmPasswordController.text.isNotEmpty)
                               Icon(
                                 _confirmPasswordController.text == _passwordController.text
-                                    ? Icons.check_circle_rounded
-                                    : Icons.cancel_rounded,
+                                    ? LucideIcons.checkCircle
+                                    : LucideIcons.xCircle,
                                 size: 20,
                                 color: _confirmPasswordController.text == _passwordController.text
                                     ? Colors.green
@@ -292,7 +293,7 @@ class _RegisterAccountScreenState extends ConsumerState<RegisterAccountScreen> {
                                 });
                               },
                               icon: Icon(
-                                _obscureConfirmPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                                _obscureConfirmPassword ? LucideIcons.eyeOff : LucideIcons.eye,
                                 color: Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.4),
                               ),
                             ),
@@ -354,7 +355,7 @@ class _RequirementRow extends StatelessWidget {
     return Row(
       children: [
         Icon(
-          met ? Icons.check_circle_rounded : Icons.cancel_rounded,
+          met ? LucideIcons.checkCircle : LucideIcons.xCircle,
           size: 14,
           color: met ? Colors.green : errorColor,
         ),

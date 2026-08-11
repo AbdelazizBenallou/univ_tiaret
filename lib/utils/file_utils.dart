@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:univ_tiaret/constants.dart';
 
 enum FileCategory { pdf, image, text, code, office, video, audio, unknown }
@@ -162,20 +163,20 @@ Color fileColor(String type) {
 IconData fileIcon(String type) {
   switch (type.toLowerCase()) {
     case 'pdf':
-      return Icons.picture_as_pdf_rounded;
+      return LucideIcons.fileText;
     case 'docx':
     case 'doc':
-      return Icons.description_rounded;
+      return LucideIcons.fileText;
     case 'pptx':
     case 'ppt':
-      return Icons.slideshow_rounded;
+      return LucideIcons.presentation;
     case 'xlsx':
     case 'xls':
-      return Icons.table_chart_rounded;
+      return LucideIcons.fileSpreadsheet;
     case 'odt':
     case 'ods':
     case 'odp':
-      return Icons.description_rounded;
+      return LucideIcons.fileText;
     case 'mp4':
     case 'avi':
     case 'mkv':
@@ -189,7 +190,7 @@ IconData fileIcon(String type) {
     case 'mpeg':
     case 'm2ts':
     case 'ogv':
-      return Icons.movie_rounded;
+      return LucideIcons.fileVideo;
     case 'mp3':
     case 'wav':
     case 'flac':
@@ -198,64 +199,54 @@ IconData fileIcon(String type) {
     case 'opus':
     case 'm4a':
     case 'wma':
-      return Icons.audiotrack_rounded;
+      return LucideIcons.fileAudio;
     case 'jpg':
     case 'jpeg':
     case 'png':
     case 'gif':
     case 'bmp':
     case 'webp':
-      return Icons.image_rounded;
+      return LucideIcons.image;
     case 'svg':
-      return Icons.palette_rounded;
+      return LucideIcons.palette;
     case 'txt':
     case 'md':
     case 'log':
-      return Icons.description_rounded;
+      return LucideIcons.fileText;
     case 'csv':
-      return Icons.table_chart_rounded;
+      return LucideIcons.fileSpreadsheet;
     case 'py':
-      return Icons.code_rounded;
     case 'java':
-      return Icons.code_rounded;
     case 'dart':
-      return Icons.code_rounded;
     case 'js':
     case 'jsx':
-      return Icons.code_rounded;
     case 'ts':
     case 'tsx':
-      return Icons.code_rounded;
     case 'c':
     case 'cpp':
     case 'h':
-      return Icons.code_rounded;
     case 'cs':
-      return Icons.code_rounded;
     case 'go':
-      return Icons.code_rounded;
     case 'rs':
-      return Icons.code_rounded;
     case 'kt':
-      return Icons.code_rounded;
     case 'php':
-      return Icons.code_rounded;
+      return LucideIcons.fileCode;
     case 'sql':
-      return Icons.storage_rounded;
+      return LucideIcons.database;
     case 'html':
     case 'css':
-      return Icons.code_rounded;
+      return LucideIcons.fileCode;
     case 'sh':
     case 'bat':
-      return Icons.terminal_rounded;
+      return LucideIcons.terminal;
     case 'json':
-      return Icons.code_rounded;
+      return LucideIcons.fileCode;
     case 'xml':
     case 'yaml':
     case 'yml':
-      return Icons.code_rounded;
+      return LucideIcons.fileCode;
     default:
-      return Icons.insert_drive_file_rounded;
+      return LucideIcons.file;
   }
 }
 

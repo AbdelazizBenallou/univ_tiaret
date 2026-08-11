@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/providers/navigation_provider.dart';
-import 'package:univ_tiaret/logic/download_provider.dart';
 
 class AppBottomNav extends ConsumerWidget {
   final int currentIndex;
@@ -20,7 +20,6 @@ class AppBottomNav extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final downloadCount = ref.watch(downloadProvider.select((p) => p.activeCount));
 
     return SafeArea(
       top: false,
@@ -53,11 +52,11 @@ class AppBottomNav extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              Expanded(child: _buildItem(context, ref, 0, Icons.home_rounded, t.translate('home'))),
-              Expanded(child: _buildItem(context, ref, 1, Icons.bookmark_rounded, t.translate('favorites'))),
-              Expanded(child: _buildItem(context, ref, 2, Icons.download_rounded, t.translate('downloads'), badge: downloadCount)),
-              Expanded(child: _buildItem(context, ref, 3, Icons.calendar_month_rounded, t.translate('calendar'))),
-              Expanded(child: _buildItem(context, ref, 4, Icons.settings_rounded, t.translate('settings_nav'))),
+              Expanded(child: _buildItem(context, ref, 0, LucideIcons.home, t.translate('home'))),
+              Expanded(child: _buildItem(context, ref, 1, LucideIcons.bookmark, t.translate('favorites'))),
+              Expanded(child: _buildItem(context, ref, 2, LucideIcons.listTodo, t.translate('todo'))),
+              Expanded(child: _buildItem(context, ref, 3, LucideIcons.calendarDays, t.translate('calendar'))),
+              Expanded(child: _buildItem(context, ref, 4, LucideIcons.settings, t.translate('settings_nav'))),
             ],
           ),
         ),
@@ -65,7 +64,7 @@ class AppBottomNav extends ConsumerWidget {
     );
   }
 
-  Widget _buildItem(BuildContext context, WidgetRef ref, int index, IconData iconData, String label, {int badge = 0}) {
+  Widget _buildItem(BuildContext context, WidgetRef ref, int index, IconData iconData, String label) {
     final isSelected = currentIndex == index;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final selectedColor = isDark ? Colors.white : AppColors.primaryColor;
@@ -96,34 +95,7 @@ class AppBottomNav extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(iconData, size: 24, color: iconColor),
-                if (badge > 0)
-                  Positioned(
-                    right: -8,
-                    top: -4,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-                      child: Text(
-                        badge.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            Icon(iconData, size: 24, color: iconColor),
             if (showLabels) ...[
               const SizedBox(height: 4),
               FittedBox(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:univ_tiaret/components/floating_snackbar.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/logic/password_provider.dart';
@@ -97,7 +98,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     padding: const EdgeInsets.symmetric(
                         vertical: 2),
                     child: Icon(
-                      Icons.email_rounded,
+                      LucideIcons.mail,
                       size: 22,
                       color: Theme.of(context)
                           .textTheme

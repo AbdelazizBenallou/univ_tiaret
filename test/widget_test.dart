@@ -9,6 +9,7 @@ import 'package:univ_tiaret/models/lesson_file.dart';
 import 'package:univ_tiaret/models/user_model.dart';
 import 'package:univ_tiaret/models/favorite_file.dart';
 import 'package:univ_tiaret/models/reminder.dart';
+import 'package:univ_tiaret/services/api_service.dart';
 
 void main() {
   group('AppColors', () {
@@ -25,9 +26,16 @@ void main() {
     test('default padding is 16', () {
       expect(defaultPadding, 16.0);
     });
+  });
 
-    test('baseUrl is localhost default', () {
-      expect(baseUrl, 'http://localhost:3000');
+  group('ApiService', () {
+    test('base URL starts empty until configured', () {
+      expect(ApiService.baseUrl, '');
+    });
+
+    test('initialize uses exactly what was provided', () {
+      ApiService.initialize('http://my-server:8080');
+      expect(ApiService.baseUrl, 'http://my-server:8080');
     });
   });
 

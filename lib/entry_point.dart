@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:animations/animations.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/l10n/app_localizations.dart';
 import 'package:univ_tiaret/providers/navigation_provider.dart';
+import 'package:univ_tiaret/route/route_constants.dart';
 import 'package:univ_tiaret/logic/download_provider.dart';
 import 'package:univ_tiaret/screens/home/views/home_screen.dart';
-import 'package:univ_tiaret/screens/home/views/downloads_screen.dart';
 import 'package:univ_tiaret/screens/home/views/favorites_screen.dart';
 import 'package:univ_tiaret/screens/home/views/calendar_screen.dart';
 import 'package:univ_tiaret/screens/settings/views/settings_screen.dart';
@@ -31,10 +32,11 @@ class _EntryPointState extends ConsumerState<EntryPoint> {
   void initState() {
     super.initState();
     _currentIndex = ref.read(navigationProvider);
+    ref.read(downloadProvider.notifier).init();
     _pages = [
       const HomeScreen(),
       const FavoritesScreen(),
-      const DownloadsScreen(),
+      const PlaceholderScreen(title: 'To Do'),
       const CalendarScreen(),
       const SettingsScreen(),
     ];
@@ -47,7 +49,9 @@ class _EntryPointState extends ConsumerState<EntryPoint> {
       _transitionDirection = nextIndex > _currentIndex ? 1 : -1;
     }
     _currentIndex = nextIndex;
-    final downloadCount = ref.watch(downloadProvider.select((p) => p.activeCount));
+    final downloadCount = ref.watch(
+      downloadProvider.select((p) => p.activeCount),
+    );
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -66,58 +70,26 @@ class _EntryPointState extends ConsumerState<EntryPoint> {
           ),
         ),
         actions: [
-          Stack(
-            clipBehavior: Clip.none,
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
+              _buildAppBarIcon(
+                context,
+                icon: LucideIcons.download,
+                badge: downloadCount,
                 onPressed: () {
-                  ref.read(navigationProvider.notifier).state = 2;
+                  Navigator.pushNamed(context, downloadsScreenRoute);
                 },
-                icon: Icon(
-                  Icons.download_rounded,
-                  size: 24,
-                  color: Theme.of(context).iconTheme.color,
-                ),
               ),
-              if (downloadCount > 0)
-                Positioned(
-                  right: 4,
-                  top: 4,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-                    child: Text(
-                      downloadCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
+              const SizedBox(width: 4),
+              _buildAppBarIcon(
+                context,
+                icon: LucideIcons.bell,
+                onPressed: () {
+                  Navigator.pushNamed(context, notificationsScreenRoute);
+                },
+              ),
             ],
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(
-              Icons.search_rounded,
-              size: 24,
-              color: Theme.of(context).iconTheme.color,
-            ),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(
-              Icons.notifications_rounded,
-              size: 24,
-              color: Theme.of(context).iconTheme.color,
-            ),
           ),
         ],
       ),
@@ -128,10 +100,16 @@ class _EntryPointState extends ConsumerState<EntryPoint> {
           return FadeTransition(
             opacity: animation,
             child: SlideTransition(
-              position: Tween<Offset>(
-                begin: Offset(0.12 * direction, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+              position:
+                  Tween<Offset>(
+                    begin: Offset(0.12 * direction, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
               child: child,
             ),
           );
@@ -139,6 +117,51 @@ class _EntryPointState extends ConsumerState<EntryPoint> {
         child: _pages[_currentIndex],
       ),
       bottomNavigationBar: AppBottomNav(currentIndex: _currentIndex),
+    );
+  }
+
+  Widget _buildAppBarIcon(
+    BuildContext context, {
+    required IconData icon,
+    required VoidCallback onPressed,
+    int badge = 0,
+  }) {
+    return Center(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          IconButton(
+            onPressed: onPressed,
+            icon: Icon(
+              icon,
+              size: 24,
+              color: Theme.of(context).iconTheme.color,
+            ),
+          ),
+          if (badge > 0)
+            Positioned(
+              right: 4,
+              top: 4,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                child: Text(
+                  badge.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -167,13 +190,19 @@ class PlaceholderScreen extends StatelessWidget {
             Text(
               title,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Theme.of(context).textTheme.headlineSmall?.color?.withValues(alpha: 0.3),
-                  ),
+                color: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.color?.withValues(alpha: 0.3),
+              ),
             ),
             const SizedBox(height: defaultPadding / 2),
             Text(
               t.translate('coming_soon'),
-              style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.3)),
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
+              ),
             ),
           ],
         ),

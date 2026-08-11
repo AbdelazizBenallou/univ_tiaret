@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:univ_tiaret/components/breadcrumb_bar.dart';
 import 'package:univ_tiaret/components/skeleton_tile.dart';
 import 'package:univ_tiaret/constants.dart';
@@ -176,8 +177,8 @@ class _ActivitiesScreenState extends ConsumerState<ActivitiesScreen> {
                                       ),
                                       Icon(
                                         Directionality.of(context) == TextDirection.rtl
-                                            ? Icons.chevron_left_rounded
-                                            : Icons.chevron_right_rounded,
+                                            ? LucideIcons.chevronLeft
+                                            : LucideIcons.chevronRight,
                                         size: 20,
                                         color: colors.onSurface
                                             .withValues(alpha: 0.3),
@@ -210,7 +211,7 @@ class _ActivitiesScreenState extends ConsumerState<ActivitiesScreen> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.cloud_off_rounded,
+                LucideIcons.cloudOff,
                 size: 36,
                 color: errorColor.withValues(alpha: 0.6),
               ),
@@ -236,7 +237,7 @@ class _ActivitiesScreenState extends ConsumerState<ActivitiesScreen> {
                 onPressed: () => ref
                     .read(activitiesProvider.notifier)
                     .fetchActivities(moduleId: widget.moduleId),
-                icon: Icon(Icons.refresh_rounded, size: 18),
+                icon: Icon(LucideIcons.refreshCw, size: 18),
                 label: Text(t.translate('try_again')),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -252,17 +253,17 @@ class _ActivitiesScreenState extends ConsumerState<ActivitiesScreen> {
   IconData _activityIcon(String name) {
     switch (name.toLowerCase()) {
       case 'lesson':
-        return Icons.menu_book_rounded;
+        return LucideIcons.bookOpen;
       case 'td':
-        return Icons.edit_rounded;
+        return LucideIcons.penLine;
       case 'tp':
-        return Icons.science_rounded;
+        return LucideIcons.flaskConical;
       case 'exam':
-        return Icons.assignment_rounded;
+        return LucideIcons.clipboard;
       case 'controle':
-        return Icons.assignment_rounded;
+        return LucideIcons.clipboard;
       default:
-        return Icons.radio_button_unchecked_rounded;
+        return LucideIcons.radio;
     }
   }
 

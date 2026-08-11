@@ -64,11 +64,15 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
     _scrollController.addListener(_onScroll);
     ref.read(downloadProvider.notifier).init();
     ref.read(favoriteProvider.notifier).init();
-    Future.microtask(() => ref.read(lessonFilesProvider.notifier).fetchFiles(
-          moduleId: widget.moduleId,
-          activityTypeId: widget.activityTypeId,
-          seasonId: widget.seasonId,
-        ));
+    Future.microtask(
+      () => ref
+          .read(lessonFilesProvider.notifier)
+          .fetchFiles(
+            moduleId: widget.moduleId,
+            activityTypeId: widget.activityTypeId,
+            seasonId: widget.seasonId,
+          ),
+    );
   }
 
   @override
@@ -106,10 +110,12 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       result = result
-          .where((f) =>
-              f.name.toLowerCase().contains(q) ||
-              f.description.toLowerCase().contains(q) ||
-              f.fileType.toLowerCase().contains(q))
+          .where(
+            (f) =>
+                f.name.toLowerCase().contains(q) ||
+                f.description.toLowerCase().contains(q) ||
+                f.fileType.toLowerCase().contains(q),
+          )
           .toList();
     }
 
@@ -136,10 +142,26 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
       title: t.translate('sort_by'),
       currentValue: _sortOption,
       options: [
-        SortOption(value: FileSortOption.dateNewest, label: t.translate('sort_newest'), icon: Icons.access_time_rounded),
-        SortOption(value: FileSortOption.dateOldest, label: t.translate('sort_oldest'), icon: Icons.history_rounded),
-        SortOption(value: FileSortOption.nameAZ, label: t.translate('sort_name_az'), icon: Icons.arrow_downward_rounded),
-        SortOption(value: FileSortOption.nameZA, label: t.translate('sort_name_za'), icon: Icons.arrow_upward_rounded),
+        SortOption(
+          value: FileSortOption.dateNewest,
+          label: t.translate('sort_newest'),
+          icon: Icons.access_time_rounded,
+        ),
+        SortOption(
+          value: FileSortOption.dateOldest,
+          label: t.translate('sort_oldest'),
+          icon: Icons.history_rounded,
+        ),
+        SortOption(
+          value: FileSortOption.nameAZ,
+          label: t.translate('sort_name_az'),
+          icon: Icons.arrow_downward_rounded,
+        ),
+        SortOption(
+          value: FileSortOption.nameZA,
+          label: t.translate('sort_name_za'),
+          icon: Icons.arrow_upward_rounded,
+        ),
       ],
     );
     if (result != null && mounted) {
@@ -179,7 +201,9 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Delete files'),
-        content: Text('Delete ${_selectedIds.length} files from your downloads?'),
+        content: Text(
+          'Delete ${_selectedIds.length} files from your downloads?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -222,14 +246,51 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
       appBar: AppBar(
         title: Text(widget.activityTypeName),
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, 'downloads');
+          Consumer(
+            builder: (context, ref, _) {
+              final active = ref.watch(
+                downloadProvider.select((p) => p.activeCount),
+              );
+              final count = active + _preparingDownloads.length;
+              return Center(
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, downloadsScreenRoute);
+                      },
+                      icon: Icon(Icons.download_rounded, size: 24),
+                    ),
+                    if (count > 0)
+                      Positioned(
+                        right: 4,
+                        top: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          child: Text(
+                            '$count',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
             },
-            icon: Icon(
-              Icons.download_rounded,
-              size: 24,
-            ),
           ),
           IconButton(
             onPressed: () {
@@ -255,58 +316,60 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
       bottomNavigationBar: AppBottomNav(
         currentIndex: ref.watch(navigationProvider),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          BreadcrumbBar(
-            items: [
-              BreadcrumbItem(
-                label: t.translate('seasons'),
-                onTap: () => Navigator.pop(context),
-              ),
-              BreadcrumbItem(
-                label: widget.seasonName,
-                onTap: () => Navigator.pop(context),
-              ),
-              BreadcrumbItem(
-                label: widget.semesterName,
-                onTap: () => Navigator.pop(context),
-              ),
-              BreadcrumbItem(
-                label: widget.moduleName,
-                onTap: () => Navigator.pop(context),
-              ),
-              BreadcrumbItem(label: widget.activityTypeName),
-            ],
-          ),
-          if (_showSearch)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: TextField(
-                controller: _searchController,
-                autofocus: true,
-                onChanged: (v) => setState(() => _searchQuery = v),
-                decoration: InputDecoration(
-                  hintText: t.translate('search_files'),
-                  prefixIcon: Icon(Icons.search_rounded, size: 22),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                          icon: Icon(Icons.close_rounded, size: 20),
-                        )
-                      : null,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      body: SubscriptionGuard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            BreadcrumbBar(
+              items: [
+                BreadcrumbItem(
+                  label: t.translate('seasons'),
+                  onTap: () => Navigator.pop(context),
+                ),
+                BreadcrumbItem(
+                  label: widget.seasonName,
+                  onTap: () => Navigator.pop(context),
+                ),
+                BreadcrumbItem(
+                  label: widget.semesterName,
+                  onTap: () => Navigator.pop(context),
+                ),
+                BreadcrumbItem(
+                  label: widget.moduleName,
+                  onTap: () => Navigator.pop(context),
+                ),
+                BreadcrumbItem(label: widget.activityTypeName),
+              ],
+            ),
+            if (_showSearch)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  decoration: InputDecoration(
+                    hintText: t.translate('search_files'),
+                    prefixIcon: Icon(Icons.search_rounded, size: 22),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                            icon: Icon(Icons.close_rounded, size: 20),
+                          )
+                        : null,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          Expanded(
-            child: _buildBody(state, t, colors, isDark),
-          ),
-        ],
+            Expanded(child: _buildBody(state, t, colors, isDark)),
+          ],
+        ),
       ),
     );
   }
@@ -365,11 +428,9 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.color
-                    ?.withValues(alpha: 0.7),
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ),
@@ -377,12 +438,13 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
             SizedBox(
               width: 160,
               child: ElevatedButton.icon(
-                onPressed: () =>
-                    ref.read(lessonFilesProvider.notifier).fetchFiles(
-                          moduleId: widget.moduleId,
-                          activityTypeId: widget.activityTypeId,
-                          seasonId: widget.seasonId,
-                        ),
+                onPressed: () => ref
+                    .read(lessonFilesProvider.notifier)
+                    .fetchFiles(
+                      moduleId: widget.moduleId,
+                      activityTypeId: widget.activityTypeId,
+                      seasonId: widget.seasonId,
+                    ),
                 icon: Icon(Icons.refresh_rounded, size: 18),
                 label: Text(t.translate('try_again')),
                 style: ElevatedButton.styleFrom(
@@ -445,7 +507,9 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
       children: [
         Expanded(
           child: RefreshIndicator(
-            onRefresh: () => ref.read(lessonFilesProvider.notifier).fetchFiles(
+            onRefresh: () => ref
+                .read(lessonFilesProvider.notifier)
+                .fetchFiles(
                   moduleId: widget.moduleId,
                   activityTypeId: widget.activityTypeId,
                   seasonId: widget.seasonId,
@@ -469,8 +533,7 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
                             Text(
                               t.translate('no_results'),
                               style: TextStyle(
-                                color:
-                                    colors.onSurface.withValues(alpha: 0.5),
+                                color: colors.onSurface.withValues(alpha: 0.5),
                               ),
                             ),
                           ],
@@ -526,7 +589,10 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
                 GestureDetector(
                   onTap: _deleteSelected,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: errorColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -534,11 +600,7 @@ class _LessonFilesScreenState extends ConsumerState<LessonFilesScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.delete_rounded,
-                          size: 24,
-                          color: errorColor,
-                        ),
+                        Icon(Icons.delete_rounded, size: 24, color: errorColor),
                         const SizedBox(width: 6),
                         Text(
                           'Delete',
@@ -734,7 +796,11 @@ class _FileTile extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(AppLocalizations.of(context).translate('delete_file')),
-        content: Text(AppLocalizations.of(context).translate('delete_file_confirm').replaceAll('{name}', file.name)),
+        content: Text(
+          AppLocalizations.of(
+            context,
+          ).translate('delete_file_confirm').replaceAll('{name}', file.name),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -745,7 +811,10 @@ class _FileTile extends ConsumerWidget {
               Navigator.pop(ctx);
               ref.read(downloadProvider.notifier).deleteDownload(file.id);
             },
-            child: Text(AppLocalizations.of(context).translate('delete'), style: TextStyle(color: errorColor)),
+            child: Text(
+              AppLocalizations.of(context).translate('delete'),
+              style: TextStyle(color: errorColor),
+            ),
           ),
         ],
       ),
@@ -756,22 +825,27 @@ class _FileTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final date = _formatDate(file.uploadedAt);
 
-    final dlSignature = ref.watch(downloadProvider.select((p) {
-      final isDone = p.isDownloaded(file.id);
-      final active = p.isActive(file.id);
-      if (isDone) return 'done';
-      if (!active) return 'idle';
-      final item = p.items.firstWhere(
-        (i) => i.id == file.id,
-        orElse: () => DownloadItem(id: -1, name: '', fileType: '', downloadUrl: ''),
-      );
-      return 'active:${(item.progress * 100).toInt()}';
-    }));
+    final dlSignature = ref.watch(
+      downloadProvider.select((p) {
+        final isDone = p.isDownloaded(file.id);
+        final active = p.isActive(file.id);
+        if (isDone) return 'done';
+        if (!active) return 'idle';
+        final item = p.items.firstWhere(
+          (i) => i.id == file.id,
+          orElse: () =>
+              DownloadItem(id: -1, name: '', fileType: '', downloadUrl: ''),
+        );
+        return 'active:${(item.progress * 100).toInt()}';
+      }),
+    );
 
     // ignore: non_constant_identifier_names
     final bool is_Download = dlSignature == 'done';
     final bool isFileActive = dlSignature.startsWith('active');
-    final isFav = ref.watch(favoriteProvider.select((p) => p.isFavorited(file.id)));
+    final isFav = ref.watch(
+      favoriteProvider.select((p) => p.isFavorited(file.id)),
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -780,8 +854,8 @@ class _FileTile extends ConsumerWidget {
           color: isSelected
               ? AppColors.greenAccent.withValues(alpha: 0.1)
               : isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : const Color(0xFFF5F5F5),
+              ? Colors.white.withValues(alpha: 0.05)
+              : const Color(0xFFF5F5F5),
           borderRadius: BorderRadius.circular(12),
         ),
         child: InkWell(
@@ -808,7 +882,11 @@ class _FileTile extends ConsumerWidget {
                         ),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(fileIcon(file.fileType), size: 20, color: Colors.white),
+                      child: Icon(
+                        fileIcon(file.fileType),
+                        size: 20,
+                        color: Colors.white,
+                      ),
                     ),
                     if (is_Download)
                       Positioned(
@@ -821,7 +899,11 @@ class _FileTile extends ConsumerWidget {
                             color: Color(0xFF2ED573),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.check_rounded, size: 12, color: Colors.white),
+                          child: const Icon(
+                            Icons.check_rounded,
+                            size: 12,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                   ],
@@ -835,20 +917,33 @@ class _FileTile extends ConsumerWidget {
                         file.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: colors.onSurface),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: colors.onSurface,
+                        ),
                       ),
                       const SizedBox(height: 3),
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: fileColor(file.fileType).withValues(alpha: 0.1),
+                              color: fileColor(
+                                file.fileType,
+                              ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               file.fileType.toUpperCase(),
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fileColor(file.fileType)),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: fileColor(file.fileType),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -857,20 +952,29 @@ class _FileTile extends ConsumerWidget {
                               moduleName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 11, color: colors.onSurface.withValues(alpha: 0.45)),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: colors.onSurface.withValues(alpha: 0.45),
+                              ),
                             ),
                           ),
                           if (file.fileSize != null) ...[
                             const SizedBox(width: 6),
                             Text(
                               formatFileSize(file.fileSize!),
-                              style: TextStyle(fontSize: 10, color: colors.onSurface.withValues(alpha: 0.35)),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: colors.onSurface.withValues(alpha: 0.35),
+                              ),
                             ),
                           ],
                           const SizedBox(width: 6),
                           Text(
                             date,
-                            style: TextStyle(fontSize: 10, color: colors.onSurface.withValues(alpha: 0.35)),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: colors.onSurface.withValues(alpha: 0.35),
+                            ),
                           ),
                         ],
                       ),
@@ -957,19 +1061,21 @@ class _FileTile extends ConsumerWidget {
                       if (isFav) {
                         fp.remove(file.id);
                       } else {
-                        fp.add(FavoriteFile(
-                          fileId: file.id,
-                          fileName: file.name,
-                          fileType: file.fileType,
-                          fileUrl: file.url,
-                          moduleId: moduleId,
-                          moduleName: moduleName,
-                          seasonId: seasonId,
-                          seasonName: seasonName,
-                          semesterName: semesterName,
-                          activityTypeId: activityTypeId,
-                          activityName: activityName,
-                        ));
+                        fp.add(
+                          FavoriteFile(
+                            fileId: file.id,
+                            fileName: file.name,
+                            fileType: file.fileType,
+                            fileUrl: file.url,
+                            moduleId: moduleId,
+                            moduleName: moduleName,
+                            seasonId: seasonId,
+                            seasonName: seasonName,
+                            semesterName: semesterName,
+                            activityTypeId: activityTypeId,
+                            activityName: activityName,
+                          ),
+                        );
                       }
                     },
                     child: Container(
@@ -982,7 +1088,9 @@ class _FileTile extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        isFav ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                        isFav
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
                         size: 18,
                         color: isFav
                             ? const Color(0xFFFFBE21)

@@ -437,16 +437,22 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
         behavior: HitTestBehavior.opaque,
         onTap: _togglePlay,
         child: Container(
-          width: 72,
-          height: 72,
+          width: 80,
+          height: 80,
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.45),
+            color: AppColors.primaryColor.withValues(alpha: 0.9),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white70, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryColor.withValues(alpha: 0.5),
+                blurRadius: 32,
+                spreadRadius: 4,
+              ),
+            ],
           ),
           child: const Icon(
             Icons.play_arrow_rounded,
-            size: 44,
+            size: 48,
             color: Colors.white,
           ),
         ),
@@ -539,47 +545,51 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
         ),
         child: SafeArea(
           bottom: false,
-          child: Row(
-            children: [
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back_rounded, size: 28),
-                color: Colors.white,
-                tooltip: t.translate('back'),
-              ),
-              Expanded(
-                child: Text(
-                  widget.fileName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              if (!_isAudio)
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Row(
+              children: [
                 IconButton(
-                  onPressed: _toggleFullscreen,
-                  icon: Icon(
-                    _fullscreen
-                        ? Icons.fullscreen_exit_rounded
-                        : Icons.fullscreen_rounded,
-                    size: 28,
-                  ),
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
                   color: Colors.white,
-                  tooltip: _fullscreen
-                      ? t.translate('media_exit_fullscreen')
-                      : t.translate('media_fullscreen'),
+                  tooltip: t.translate('back'),
                 ),
-              IconButton(
-                onPressed: () => _showMoreSheet(context),
-                icon: const Icon(Icons.more_vert_rounded, size: 28),
-                color: Colors.white,
-                tooltip: t.translate('media_more'),
-              ),
-            ],
+                Expanded(
+                  child: Text(
+                    widget.fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+                if (!_isAudio)
+                  IconButton(
+                    onPressed: _toggleFullscreen,
+                    icon: Icon(
+                      _fullscreen
+                          ? Icons.fullscreen_exit_rounded
+                          : Icons.fullscreen_rounded,
+                      size: 24,
+                    ),
+                    color: Colors.white,
+                    tooltip: _fullscreen
+                        ? t.translate('media_exit_fullscreen')
+                        : t.translate('media_fullscreen'),
+                  ),
+                IconButton(
+                  onPressed: () => _showMoreSheet(context),
+                  icon: const Icon(Icons.tune_rounded, size: 24),
+                  color: Colors.white,
+                  tooltip: t.translate('media_more'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -737,7 +747,6 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
   }
 
   Widget _buildBottomBar() {
-    final t = AppLocalizations.of(context);
     final total = _duration.inMilliseconds.toDouble();
     final currentMs = _dragging
         ? _dragValue
@@ -759,7 +768,7 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.only(left: 12, right: 12, top: 4, bottom: 8),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -774,22 +783,24 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        fontFeatures: [FontFeature.tabularFigures()],
                       ),
                     ),
                     Expanded(
                       child: SliderTheme(
                         data: SliderTheme.of(context).copyWith(
-                          trackHeight: 3,
+                          trackHeight: 2,
                           activeTrackColor: AppColors.primaryColor,
                           inactiveTrackColor: Colors.white24,
                           thumbColor: Colors.white,
                           thumbShape: const RoundSliderThumbShape(
-                            enabledThumbRadius: 7,
+                            enabledThumbRadius: 5,
                           ),
                           overlayShape: const RoundSliderOverlayShape(
-                            overlayRadius: 16,
+                            overlayRadius: 12,
                           ),
-                          overlayColor: Colors.white24,
+                          overlayColor: AppColors.primaryColor.withValues(alpha: 0.3),
                         ),
                         child: Slider(
                           min: 0,
@@ -818,113 +829,168 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        fontFeatures: [FontFeature.tabularFigures()],
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 4),
                 Row(
                   children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          IconButton(
-                            onPressed: _toggleMute,
-                            icon: Icon(
-                              _muted || _volume == 0
-                                  ? Icons.volume_off_rounded
-                                  : Icons.volume_up_rounded,
-                              size: 26,
-                            ),
-                            color: Colors.white,
-                            tooltip: t.translate('media_volume'),
-                          ),
-                          Expanded(
-                            child: Slider(
-                              value: _muted ? 0 : _volume.clamp(0, 100),
-                              activeColor: Colors.white,
-                              inactiveColor: Colors.white24,
-                              onChanged: _setVolume,
-                            ),
-                          ),
-                        ],
+                    GestureDetector(
+                      onTap: _toggleMute,
+                      child: Icon(
+                        _muted || _volume == 0
+                            ? Icons.volume_off_rounded
+                            : _volume < 50
+                                ? Icons.volume_down_rounded
+                                : Icons.volume_up_rounded,
+                        color: Colors.white,
+                        size: 20,
                       ),
                     ),
-                    IconButton(
-                      onPressed: () => _skip(-10),
-                      icon: const Icon(Icons.replay_10_rounded, size: 34),
-                      color: Colors.white,
-                      tooltip: '10',
+                    const SizedBox(width: 4),
+                    SizedBox(
+                      width: 72,
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 2,
+                          activeTrackColor: Colors.white,
+                          inactiveTrackColor: Colors.white24,
+                          thumbColor: Colors.white,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 4,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 10,
+                          ),
+                          overlayColor: Colors.white24,
+                        ),
+                        child: Slider(
+                          value: _muted ? 0 : _volume.clamp(0, 100),
+                          onChanged: _setVolume,
+                        ),
+                      ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: _buffering
-                          ? const Padding(
-                              padding: EdgeInsets.all(10),
-                              child: SizedBox(
-                                width: 30,
-                                height: 30,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            )
-                          : IconButton(
-                              onPressed: _togglePlay,
-                              icon: Icon(
-                                _playing
-                                    ? Icons.pause_circle_filled_rounded
-                                    : Icons.play_circle_fill_rounded,
-                                size: 48,
-                              ),
-                              color: Colors.white,
-                              tooltip: _playing
-                                  ? t.translate('media_pause')
-                                  : t.translate('media_play'),
-                            ),
+                    const Spacer(),
+                    _buildControlButton(
+                      icon: Icons.replay_10_rounded,
+                      size: 26,
+                      onTap: () => _skip(-10),
+                      tooltip: '-10s',
                     ),
-                    IconButton(
-                      onPressed: () => _skip(10),
-                      icon: const Icon(Icons.forward_10_rounded, size: 34),
-                      color: Colors.white,
-                      tooltip: '10',
-                    ),
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => _showMoreSheet(context),
-                            child: Text(
-                              '${_rate}x',
-                              style: const TextStyle(
+                    const SizedBox(width: 24),
+                    _buffering
+                        ? const SizedBox(
+                            width: 36,
+                            height: 36,
+                            child: Padding(
+                              padding: EdgeInsets.all(6),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
                                 color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          )
+                        : GestureDetector(
+                            onTap: _togglePlay,
+                            child: Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryColor,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primaryColor.withValues(alpha: 0.5),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                _playing
+                                    ? Icons.pause_rounded
+                                    : Icons.play_arrow_rounded,
+                                color: Colors.white,
+                                size: 40,
                               ),
                             ),
                           ),
-                          if (!_isAudio)
-                            IconButton(
-                              onPressed: _toggleFullscreen,
-                              icon: Icon(
-                                _fullscreen
-                                    ? Icons.fullscreen_exit_rounded
-                                    : Icons.fullscreen_rounded,
-                                size: 26,
-                              ),
-                              color: Colors.white,
-                              tooltip: _fullscreen
-                                  ? t.translate('media_exit_fullscreen')
-                                  : t.translate('media_fullscreen'),
-                            ),
-                        ],
+                    const SizedBox(width: 24),
+                    _buildControlButton(
+                      icon: Icons.forward_10_rounded,
+                      size: 26,
+                      onTap: () => _skip(10),
+                      tooltip: '+10s',
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => _showMoreSheet(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${_rate}x',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
+                    if (!_isAudio) ...[
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: _toggleFullscreen,
+                        child: Icon(
+                          _fullscreen
+                              ? Icons.fullscreen_exit_rounded
+                              : Icons.fullscreen_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControlButton({
+    required IconData icon,
+    required double size,
+    required VoidCallback onTap,
+    required String tooltip,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Tooltip(
+        message: tooltip,
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: size,
           ),
         ),
       ),

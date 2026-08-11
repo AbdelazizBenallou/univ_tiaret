@@ -16,33 +16,47 @@ import 'package:univ_tiaret/screens/file_viewer/file_viewer_screen.dart';
 import 'package:univ_tiaret/screens/profile/views/profile_screen.dart';
 import 'package:univ_tiaret/screens/profile/views/edit_profile_screen.dart';
 import 'package:univ_tiaret/screens/subscription/views/subscribe_screen.dart';
+import 'package:univ_tiaret/screens/settings/views/reviews_screen.dart';
+import 'package:univ_tiaret/screens/settings/views/write_review_screen.dart';
+import 'package:univ_tiaret/screens/settings/views/security_screen.dart';
+import 'package:univ_tiaret/screens/settings/views/about_us_screen.dart';
+import 'package:univ_tiaret/screens/settings/views/terms_screen.dart';
+import 'package:univ_tiaret/screens/settings/views/notifications_screen.dart';
 import 'package:univ_tiaret/screens/splash/views/splash_screen.dart';
 import 'route_constants.dart';
 
 Route<dynamic> generateRoute(RouteSettings settings) {
   switch (settings.name) {
     case splashScreenRoute:
-      return MaterialPageRoute(
-        builder: (context) => const SplashScreen(),
-      );
+      return MaterialPageRoute(builder: (context) => const SplashScreen());
     case logInScreenRoute:
       return _buildRoute(settings, const LoginScreen());
     case registerScreenRoute:
       return _buildRoute(settings, const RegisterPersonalScreen());
     case registerAccountScreenRoute:
-      return _buildRoute(settings, const RegisterAccountScreen(), customSettings: settings);
+      return _buildRoute(
+        settings,
+        const RegisterAccountScreen(),
+        customSettings: settings,
+      );
     case forgotPasswordScreenRoute:
       return _buildRoute(settings, const ForgotPasswordScreen());
     case codeVerificationScreenRoute:
-      return _buildRoute(settings, const CodeVerificationScreen(), customSettings: settings);
+      return _buildRoute(
+        settings,
+        const CodeVerificationScreen(),
+        customSettings: settings,
+      );
     case resetPasswordScreenRoute:
-      return _buildRoute(settings, const ResetPasswordScreen(), customSettings: settings);
+      return _buildRoute(
+        settings,
+        const ResetPasswordScreen(),
+        customSettings: settings,
+      );
     case changePasswordScreenRoute:
       return _buildRoute(settings, const ChangePasswordScreen());
     case entryPointScreenRoute:
-      return MaterialPageRoute(
-        builder: (context) => const EntryPoint(),
-      );
+      return MaterialPageRoute(builder: (context) => const EntryPoint());
     case semestersScreenRoute:
       final args = settings.arguments as Map<String, dynamic>;
       return _buildRoute(
@@ -99,9 +113,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return _buildRoute(
         settings,
         Scaffold(
-          appBar: AppBar(
-            title: const Text('Downloads'),
-          ),
+          appBar: AppBar(title: const Text('Downloads')),
           body: const DownloadsScreen(),
         ),
       );
@@ -111,6 +123,18 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return _buildRoute(settings, const EditProfileScreen());
     case subscribeScreenRoute:
       return _buildRoute(settings, const SubscribeScreen());
+    case reviewsScreenRoute:
+      return _buildRoute(settings, const ReviewsScreen());
+    case writeReviewScreenRoute:
+      return _buildRoute(settings, const WriteReviewScreen());
+    case securityScreenRoute:
+      return _buildRoute(settings, const SecurityScreen());
+    case aboutUsScreenRoute:
+      return _buildRoute(settings, const AboutUsScreen());
+    case termsScreenRoute:
+      return _buildRoute(settings, const TermsScreen());
+    case notificationsScreenRoute:
+      return _buildRoute(settings, const NotificationsScreen());
     case fileViewerScreenRoute:
       final args = settings.arguments as Map<String, dynamic>;
       return MaterialPageRoute(
@@ -122,9 +146,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
         ),
       );
     default:
-      return MaterialPageRoute(
-        builder: (context) => const SplashScreen(),
-      );
+      return MaterialPageRoute(builder: (context) => const SplashScreen());
   }
 }
 
@@ -139,10 +161,14 @@ Route<dynamic> _buildRoute(
     transitionDuration: const Duration(milliseconds: 300),
     reverseTransitionDuration: const Duration(milliseconds: 250),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final tween = Tween(begin: const Offset(1.0, 0.0), end: Offset.zero)
-          .chain(CurveTween(curve: Curves.easeOutCubic));
-      final fadeTween = Tween(begin: 0.0, end: 1.0)
-          .chain(CurveTween(curve: Curves.easeOut));
+      final tween = Tween(
+        begin: const Offset(1.0, 0.0),
+        end: Offset.zero,
+      ).chain(CurveTween(curve: Curves.easeOutCubic));
+      final fadeTween = Tween(
+        begin: 0.0,
+        end: 1.0,
+      ).chain(CurveTween(curve: Curves.easeOut));
 
       return SlideTransition(
         position: animation.drive(tween),

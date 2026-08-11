@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:univ_tiaret/services/auth_service.dart';
 
 class ApiService {
-  static String _baseUrl = "http://localhost:3000";
+  static String _baseUrl = '';
   static bool _initialized = false;
   static Completer<bool>? _refreshCompleter;
 
@@ -89,6 +91,44 @@ class ApiService {
     );
   }
 
+  /// Upload a file (multipart/form-data) to the given endpoint.
+  static Future<Map<String, dynamic>> uploadFiles(
+    String endpoint, {
+    required Uint8List bytes,
+    required String filename,
+    String fieldName = 'files',
+  }) async {
+    debugPrint('[API] uploadFiles POST $endpoint '
+        'file=$filename (${bytes.length} bytes)');
+    try {
+      final uri = Uri.parse('$_baseUrl$endpoint');
+      final token = await AuthService.getAccessToken();
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Accept'] = 'application/json';
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          fieldName,
+          bytes,
+          filename: filename,
+          contentType: _contentTypeFor(filename),
+        ),
+      );
+      final streamed = await request
+          .send()
+          .timeout(const Duration(seconds: 30));
+      final response = await http.Response.fromStream(streamed)
+          .timeout(const Duration(seconds: 30));
+      debugPrint('[API] uploadFiles response status=${response.statusCode}');
+      return _handleResponse(response);
+    } catch (e, st) {
+      debugPrint('[API] uploadFiles EXCEPTION: $e\n$st');
+      return {'success': false, 'message': 'Network error: $e'};
+    }
+  }
+
   static Future<Map<String, dynamic>> _requestWithRetry({
     required String method,
     required String endpoint,
@@ -101,6 +141,8 @@ class ApiService {
       try {
         final uri = Uri.parse('$_baseUrl$endpoint');
         final headers = await _headers(includeAuth: includeAuth);
+        debugPrint('[API] $method $endpoint (attempt ${attempt + 1}) '
+            'body=${body == null ? '-' : jsonEncode(body)}');
 
         http.Response response;
         if (method == 'GET') {
@@ -116,6 +158,8 @@ class ApiService {
               .post(uri, headers: headers, body: body != null ? jsonEncode(body) : null)
               .timeout(const Duration(seconds: 10));
         }
+        debugPrint('[API] $method $endpoint -> status=${response.statusCode} '
+            'body=${response.body.length > 500 ? '${response.body.substring(0, 500)}...' : response.body}');
 
         // 401 on auth endpoints -> parse server message (login/register errors)
         if (response.statusCode == 401 && _isAuthEndpoint(endpoint)) {
@@ -139,7 +183,10 @@ class ApiService {
                 msg.contains('expired') ||
                 msg.contains('invalid token')) {
               final refreshed = await _tryRefreshTokenDedup();
-              if (refreshed) {
+              if (refreshed && attempt < maxRetries) {
+                attempt++;
+                debugPrint('[API] $method $endpoint 401, token refreshed, '
+                    'retrying (attempt ${attempt + 1})');
                 continue;
               }
               await AuthService.clearAuth();
@@ -149,7 +196,10 @@ class ApiService {
             return {'success': false, 'message': message};
           } catch (_) {}
           final refreshed = await _tryRefreshTokenDedup();
-          if (refreshed) {
+          if (refreshed && attempt < maxRetries) {
+            attempt++;
+            debugPrint('[API] $method $endpoint 401, token refreshed, '
+                'retrying (attempt ${attempt + 1})');
             continue;
           }
           await AuthService.clearAuth();
@@ -168,6 +218,8 @@ class ApiService {
 
         return _handleResponse(response);
       } on TimeoutException {
+        debugPrint('[API] $method $endpoint TIMEOUT '
+            '(attempt ${attempt + 1}/$maxRetries)');
         if (attempt < maxRetries) {
           attempt++;
           await Future.delayed(Duration(seconds: 1 * (1 << attempt)));
@@ -175,6 +227,8 @@ class ApiService {
         }
         return {'success': false, 'message': 'Network timeout'};
       } catch (e) {
+        debugPrint('[API] $method $endpoint EXCEPTION: $e '
+            '(attempt ${attempt + 1}/$maxRetries)');
         if (attempt < maxRetries) {
           attempt++;
           await Future.delayed(Duration(seconds: 1 * (1 << attempt)));
@@ -194,6 +248,7 @@ class ApiService {
     try {
       parsed = jsonDecode(response.body) as Map<String, dynamic>;
     } catch (_) {
+      debugPrint('[API] Response body is not valid JSON: ${response.body}');
       return {
         'success': response.statusCode >= 200 && response.statusCode < 300,
         'message': response.body,
@@ -204,9 +259,12 @@ class ApiService {
       return parsed;
     }
 
+    final message = parsed['message'] ?? parsed['error'] ?? 'Request failed';
+    debugPrint('[API] Response error: status=${response.statusCode} '
+        'message=$message');
     return {
       'success': false,
-      'message': parsed['message'] ?? parsed['error'] ?? 'Request failed',
+      'message': message,
     };
   }
 
@@ -313,5 +371,17 @@ class ApiService {
     } catch (e) {
       return {'success': false, 'message': 'Server unreachable'};
     }
+  }
+
+  static MediaType? _contentTypeFor(String filename) {
+    final ext = filename.split('.').last.toLowerCase();
+    return switch (ext) {
+      'jpg' || 'jpeg' => MediaType('image', 'jpeg'),
+      'png' => MediaType('image', 'png'),
+      'webp' => MediaType('image', 'webp'),
+      'gif' => MediaType('image', 'gif'),
+      'heic' || 'heif' => MediaType('image', 'heic'),
+      _ => null,
+    };
   }
 }

@@ -93,6 +93,26 @@ class AuthProvider extends ChangeNotifier {
     await ProfileRepository.upsert(data);
   }
 
+  /// Syncs profile edits (name, phone, avatar, ...) back into the auth user
+  /// so UI that reads `auth.user` (e.g. settings header) updates immediately.
+  Future<void> syncUserFromProfile(Map<String, dynamic> profile) async {
+    if (_user == null) return;
+    _user = _user!.copyWith(
+      firstName: profile['first_name'] as String?,
+      lastName: profile['last_name'] as String?,
+      gender: profile['gender'] as String?,
+      phone: profile['phone'] as String?,
+      avatar: profile['avatar'] as String?,
+      levelId: profile['level_id'] as int?,
+      levelName: profile['level_name'] as String?,
+      specialityId: profile['speciality_id'] as int?,
+      specialityName: profile['speciality_name'] as String?,
+    );
+    await AuthService.saveUser(_user!);
+    await _syncProfileToDb();
+    _safeNotify();
+  }
+
   Future<void> init() async {
     final isAuth = await AuthService.isAuthenticated();
     if (isAuth) {

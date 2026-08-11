@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:univ_tiaret/services/download_service.dart';
 
@@ -37,7 +36,7 @@ class DownloadProvider extends ChangeNotifier {
     _needsUpdate = true;
     if (_notifyScheduled) return;
     _notifyScheduled = true;
-    SchedulerBinding.instance.addPostFrameCallback((_) {
+    Timer(Duration.zero, () {
       _notifyScheduled = false;
       if (_disposed) return;
       if (_needsUpdate) {

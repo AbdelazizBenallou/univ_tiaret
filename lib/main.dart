@@ -4,20 +4,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:univ_tiaret/l10n/localizations_delegate.dart';
 import 'package:univ_tiaret/l10n/locale_preferences.dart';
+import 'package:univ_tiaret/constants.dart';
 import 'package:univ_tiaret/preferences/theme_preferences.dart';
 import 'package:univ_tiaret/route/route_constants.dart';
 import 'package:univ_tiaret/route/router.dart' as router;
 import 'package:univ_tiaret/theme/app_theme.dart';
-import 'package:univ_tiaret/services/server_config_service.dart';
+import 'package:univ_tiaret/services/api_service.dart';
 import 'package:univ_tiaret/services/notification_service.dart';
+import 'package:univ_tiaret/logic/notification_history_provider.dart';
 import 'package:univ_tiaret/db/db.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
-  await ServerConfigService.loadConfig();
+  ApiService.initialize(apiBaseUrl);
   await NotificationService.instance.init();
+  await NotificationService.instance.requestPermission();
   await DatabaseHelper.instance.database;
+  await NotificationHistoryProvider().init();
+  await NotificationService.instance.refreshPendingCount();
   runApp(const ProviderScope(child: MyApp()));
 }
 

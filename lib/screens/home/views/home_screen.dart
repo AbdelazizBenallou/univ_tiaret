@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:univ_tiaret/components/breadcrumb_bar.dart';
 import 'package:univ_tiaret/components/modern_list_tile.dart';
 import 'package:univ_tiaret/components/skeleton_tile.dart';
@@ -59,7 +60,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  Icons.cloud_off_rounded,
+                                  LucideIcons.cloudOff,
                                   size: 36,
                                   color: errorColor.withValues(alpha: 0.6),
                                 ),
@@ -85,7 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   onPressed: () => ref
                                       .read(seasonsProvider.notifier)
                                       .fetchSeasons(),
-                                  icon: Icon(Icons.error_rounded, size: 18),
+                                  icon: Icon(LucideIcons.alertCircle, size: 18),
                                   label: Text(t.translate('try_again')),
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -121,7 +122,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               itemBuilder: (context, index) {
                                 final season = seasonsState.seasons[index];
                                 return ModernListTile(
-                                  icon: Icons.date_range_rounded,
+                                  icon: LucideIcons.calendarDays,
                                   title: season.name,
                                   subtitle: t.translate('season'),
                                   badge: season.isCurrent

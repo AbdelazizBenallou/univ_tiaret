@@ -3,6 +3,8 @@ import 'package:form_field_validator/form_field_validator.dart';
 
 const grandisExtendedFont = "Grandis Extended";
 
+const String apiBaseUrl = 'https://univtiaret.ddns.net';
+
 class AppColors {
   static const primary = Color(0xFF125488);
   static const primaryColor = Color(0xFF125488);
@@ -61,8 +63,6 @@ const Color errorColor = AppColors.error;
 const double defaultPadding = 16.0;
 const double defaultBorderRadious = 12.0;
 const Duration defaultDuration = Duration(milliseconds: 300);
-
-const String baseUrl = "http://localhost:3000";
 
 MultiValidator passwordValidator(String requiredMsg, String minLengthMsg, String upperMsg, String lowerMsg, String numberMsg, String specialMsg) => MultiValidator([
   RequiredValidator(errorText: requiredMsg),
